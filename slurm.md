@@ -281,3 +281,69 @@ Here are some options:
     - parallel Python tools such as  *ipyparallel*, *Dask*, and *ray*
     - parallel functionality in MATLAB through *parfor*
 
+# Common Queue Questions (Nicolas)
+- Why isn't my job running (yet)?
+- When is my job expected to start?
+- How can I get my job to start sooner?
+
+# Why isn't my job running (yet)?
+
+Could be for various reasons, including:
+- Waiting for other higher priority jobs to finish
+- Running this job would exceed a condo/QoS limit
+- Incompatible parameters with the QoS (even though it made it to the queue)
+
+# Introducing `sq`
+We developed a new tool to diagnose issues:
+```bash
+module load sq
+sq
+```
+You can also use it as an `squeue` replacement:
+```bash
+sq -aq
+```
+
+# `sq` Example Scenarios
+- The job would intersect with downtime so the job will run _after_ the downtime
+- Condo users have a fixed number of nodes with their condo QoS
+  - Try using `savio_lowprio` QoS
+- JOb is requesting longer wall-clock time than is allowed (`QOSMaxWallDurationPerJobLimit')
+
+# `sq` Demo
+Demo QOSGrp
+```bash
+sq -u "$(squeue -o %all -P | grep -i qosgrp | cut -d'|' -f21 | shuf | head -n1)"
+```
+
+# `squeue`
+- If you need more specific information, you can use Slurm's own `squeue`.
+  - `REASON` are explained in `man squeue`
+  
+# Common `REASON`
+- `PRIORITY` - There are other higher priority jobs being allocated nodes
+- `RESOURCES` - This job is next in priority and is waiting for available nodes
+
+# When is my job expected to start? (PENDING)
+Check how many other pending jobs there are in the queue:
+```bash
+squeue -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY
+```
+Higher priority means it will try to run sooner.
+
+# When is my job expected to start? (RESOURCES)
+If status is `RESOURCES`, you may check:
+```bash
+squeue --start -u $USER
+```
+to get an _estimated_ start time.
+
+# How can I get my job to start sooner?
+- Shorten the time limit. Slurm may be able to fit a shorter job in a small gap between other jobs.
+- Request fewer nodes (or cores on partitions scheduled by cores). Perhaps there are a few nodes available right now but you would have to wait for other jobs to release other nodes if you wanted more.
+- Choose condo QoS if possible for higher priority.
+- Choose a partition with more idle nodes
+  - `sinfo -o %P,%A` (Partition, Allocated/Idle)
+  - View on our [Savio status dashboard](https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2)
+- High recent usage decreases FCA priority.
+
