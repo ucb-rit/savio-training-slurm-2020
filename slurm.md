@@ -37,9 +37,12 @@ The materials for this tutorial are available using git at the short URL ([https
 
 This training session will cover the following topics:
 
- - Overview
- - Topic 1...
-     - Sub topic
+ - Submitting Jobs (Chris)
+ - How Slurm Works (Wei)
+ - Common Queue Questions (Nicolas)
+   - Why isn't my job running (yet)?
+   - Estimating job start time
+   - Making jobs run sooner
      
 
 # Simplified diagram of Savio 
@@ -289,6 +292,7 @@ Here are some options:
 # Why isn't my job running (yet)?
 
 Could be for various reasons, including:
+
 - Waiting for other higher priority jobs to finish
 - Running this job would exceed a condo/QoS limit
 - Incompatible parameters with the QoS (even though it made it to the queue)
@@ -308,7 +312,7 @@ sq -aq
 - The job would intersect with downtime so the job will run _after_ the downtime
 - Condo users have a fixed number of nodes with their condo QoS
   - Try using `savio_lowprio` QoS
-- JOb is requesting longer wall-clock time than is allowed (`QOSMaxWallDurationPerJobLimit')
+- Job is requesting longer wall-clock time than is allowed (`QOSMaxWallDurationPerJobLimit`)
 
 # `sq` Demo
 Demo QOSGrp
@@ -317,6 +321,7 @@ sq -u "$(squeue -o %all -P | grep -i qosgrp | cut -d'|' -f21 | shuf | head -n1)"
 ```
 
 # `squeue`
+
 - If you need more specific information, you can use Slurm's own `squeue`.
   - `REASON` are explained in `man squeue`
   
