@@ -28,9 +28,9 @@ The materials for this tutorial are available using git at the short URL ([https
 - [Sensitive Data](https://research-it.berkeley.edu/services/sensitive-and-protected-data): We are building a service and platform for researchers working with sensitive data. Secure VMs are available now and secure HPC cluster + storage are coming soon at a baseline capacity at no cost. Please get in touch if you are working with sensitive data.
 - [Cloud Computing Meetup](https://www.meetup.com/ucberkeley_cloudmeetup/)
     - Monthly on last Tuesday
-    - Next meeting on 10/27
+    - Next meeting on Tuesday November 24
 - [Securing Research Data Working Group](https://dlab.berkeley.edu/working-groups/securing-research-data-working-group)
-    - Monthly, next meeting on 10/26
+    - Monthly, next meeting Monday November 23
 
 
 # Outline
@@ -38,44 +38,46 @@ The materials for this tutorial are available using git at the short URL ([https
 This training session will cover the following topics:
 
  - Submitting Jobs (Chris)
+   - Parallel jobs
+   - Other kinds of jobs
+   - Possible submission errors
+   - Checking on running jobs
  - How Slurm Works (Wei)
+   - Introduction to queueing on clusters
+   - Slurm details
+   - How Slurm is set up on Savio
  - Common Queue Questions (Nicolas)
    - Why isn't my job running (yet)?
    - Estimating job start time
    - Making jobs run sooner
      
 
-# Simplified diagram of Savio 
+# The Savio cluster
 
-Here is a simplified view of how accessing a supercomputer actually works. **SLURM is (the most) essential** to allow Savio and many other High Performance Clusters around the world work.
+Savio is a Linux cluster - by cluster we mean a set of computers networked together such that you can:
 
-**SLURM** is the *Simple Linux Utility Resource Manager*. SLURM is very similar to *flight dispatcher + air traffic controller* at an airport. In this analogy planes are the jobs (*i.e. your code in a batch file*) that you send off into the sky / cluster...this also works to have a mental framework for Cloud Computing (*a bit different from HPC clusters like Savio but plenty of overlap*).
-
-### What SLURM does
-
-1. Allocates access to resources (compute nodes) to users for some duration of time
-2. Handles starting, executing, and monitoring jobs on allocated nodes 
-3. Manages queue of submitting jobs (*asyncronous*)
-
-<center><img src="savio_abstracted.jpeg"></center>
+ 1) access the system by logging into a "login node"
+ 2) access your files on the system from any of the computers
+ 3) run your computations across one or more of the "compute nodes"
+    - your work might use parallelization to do computation on more than one CPU
+    - you can also run "serial" jobs that use a single CPU
 
 # Conceptual diagram of Savio
 
 <center><img src="savio_diagram.jpeg"></center>
 
-# Submitting jobs: overview
+# Slurm's job
 
-All computations are done by submitting jobs to the scheduling software that manages jobs on the cluster, called SLURM.
+All computations are done by submitting jobs to the scheduling software that manages jobs on the cluster, called Slurm.
 
 Why is this necessary? Otherwise your jobs would be slowed down by other people's jobs running on the same node. This also allows everyone to fairly share Savio.
 
-The basic workflow is:
+Savio uses Slurm to:
 
- - login to Savio; you'll end up on one of the login nodes in your home directory
- - use `cd` to go to the directory from which you want to submit the job
- - submit the job using `sbatch` (or an interactive job using `srun`, discussed later)
-    - when your job starts, the working directory will be the one from which the job was submitted
-    - the job will be running on a compute node, not the login node
+ 1) Allocate access to resources (compute nodes) to users' jobs
+ 2) Start and monitor jobs on allocated resources
+ 3) Manage the queue of pending jobs
+
 
 # Submitting jobs: accounts and partitions
 
@@ -116,7 +118,6 @@ In contrast, through my FCA, I have access to the savio, savio2, big memory, HTC
 
 Let's see how to submit a simple job. If your job will only use the resources on a single node, you can do the following. 
 
-
 Here's an example job script that I'll run. You'll need to modify the --account value and possibly the --partition value.
 
 ```bash
@@ -138,6 +139,8 @@ module load python/3.6
 python calc.py >& calc.out
 ```
 
+# Monitoring jobs
+
 Now let's submit and monitor the job:
 
 ```
@@ -148,7 +151,7 @@ squeue -j <JOB_ID>
 wwall -j <JOB_ID>
 ```
 
-After a job has completed (or been terminated/cancelled), you can review the maximum memory used via the sacct command.
+After a job has completed (or been terminated/cancelled), you can review the maximum memory used (and other information) via the sacct command.
 
 ```
 sacct -j <JOB_ID> --format=JobID,JobName,MaxRSS,Elapsed
@@ -161,9 +164,6 @@ You can also login to the node where you are running and use commands like *top*
 ```
 srun --jobid=<JOB_ID> --pty /bin/bash
 ```
-
-Note that except for the *savio2_htc*  and various GPU partitions, all jobs are given exclusive access to the entire node or nodes assigned to the job (and your account is charged for all of the cores on the node(s)).
-
 
 # Parallel job submission
 
@@ -219,26 +219,46 @@ Some common paradigms are:
    
 There are lots more examples of job submission scripts for different kinds of parallelization (multi-node (MPI), multi-core (openMP), hybrid, etc.) [here](http://research-it.berkeley.edu/services/high-performance-computing/running-your-jobs#Job-submission-with-specific-resource-requirements).
 
+# Details on some parallel variations
 
-# Interactive jobs
+# Long-running jobs
 
-You can also do work interactively. This simply moves you from a login node to a compute node.
 
-```
-srun -A co_stat -p savio2  --nodes=1 -t 10:0 --pty bash
-# note that you end up in the same working directory as when you submitted the job
-# now execute on the compute node:
-module load matlab
-matlab -nodesktop -nodisplay
-```
 
-To end your interactive session (and prevent accrual of additional charges to your FCA), simply enter `exit` in the terminal session.
+# GPU jobs
 
-NOTE: you are charged for the entire node when running interactive jobs (as with batch jobs) except in the *savio2_htc* and *savio2_gpu* partitions. 
+Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) have multiple GPUs on each node.
 
-# Running graphical interfaces interactively on the visualization node
+  - You can request as many GPUs as your code will use.
+  - You must request 2 CPUs for each GPU
 
-If you are running a graphical interface, we recommend you use Savio's remote desktop service on our visualization node, as described [here](http://research-it.berkeley.edu/services/high-performance-computing/using-brc-visualization-node-realvnc).
+#!/bin/bash
+# Job name:
+#SBATCH --job-name=test
+#
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=savio2_gpu
+#
+# Number of nodes:
+#SBATCH --nodes=1
+#
+# Number of tasks (one for each GPU desired for use case) (example):
+#SBATCH --ntasks=1
+#
+# Processors per task (please always specify the total number of processors twice the number of GPUs):
+#SBATCH --cpus-per-task=2
+#
+#Number of GPUs, this can be in the format of "gpu:[1-4]", or "gpu:K80:[1-4] with the type included
+#SBATCH --gres=gpu:1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out
 
 # Low-priority queue
 
@@ -283,6 +303,34 @@ Here are some options:
     - parallel R tools such as *future*, *foreach*, *parLapply*, and *mclapply*
     - parallel Python tools such as  *ipyparallel*, *Dask*, and *ray*
     - parallel functionality in MATLAB through *parfor*
+
+
+# Some possible submission errors
+
+Here are some errors that might result in your job never even being queued.
+
+Make sure account/partition/QoS combo is legitimate:
+
+```
+[paciorek@ln002 ~]$ srun -A co_stat -t 5:00 -q savio_normal -p savio3 --pty bash
+srun: error: Unable to allocate resources: Invalid qos specification
+```
+
+Request 2 CPUs for each GPU:
+
+```
+[paciorek@ln002 ~]$ srun -A ac_scsguest -t 5:00 -p savio2_gpu --gres=gpu:1 --pty bash
+srun: error: Unable to allocate resources: Invalid generic resource (gres) specification
+```
+
+Need to request FCA renewal or pay for extra service units:
+
+```
+[paciorek@ln002 ~]$  srun -A fc_paciorek -p savio2  -t 5:00 --pty bash
+srun: error: This user/account pair does not have enough service units to afford this job's estimated cost
+```
+
+However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.  
 
 # Common Queue Questions (Nicolas)
 - Why isn't my job running (yet)?
