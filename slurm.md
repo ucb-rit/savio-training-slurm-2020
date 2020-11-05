@@ -179,9 +179,6 @@ Here's an example job script for a job that uses MPI for parallelizing over mult
 
 ```bash
 #!/bin/bash
-# Job name:
-#SBATCH --job-name=test
-#
 # Account:
 #SBATCH --account=account_name
 #
@@ -199,6 +196,7 @@ Here's an example job script for a job that uses MPI for parallelizing over mult
 #
 ## Command(s) to run (example):
 module load intel openmpi
+## This will run a.out using 40 (i.e., $SLURM_NTASKS) MPI tasks
 mpirun ./a.out
 ```
 
@@ -219,11 +217,89 @@ Some common paradigms are:
    
 There are lots more examples of job submission scripts for different kinds of parallelization (multi-node (MPI), multi-core (openMP), hybrid, etc.) [here](http://research-it.berkeley.edu/services/high-performance-computing/running-your-jobs#Job-submission-with-specific-resource-requirements).
 
-# Details on some parallel variations
+# Parallel jobs: Threaded (e.g., openMP) job
 
-# Long-running jobs
+```
+#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Specify one task:
+#SBATCH --ntasks-per-node=1
+#
+# Number of processors for single task needed for use case (example):
+#SBATCH --cpus-per-task=4
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+./a.out
+```
 
+Also useful for parallel Python, MATLAB, or R code on one node.
 
+# Parallel jobs: Multi-process jobs
+
+```
+#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Request one node:
+#SBATCH --nodes=1
+#
+# Specify number of tasks for use case (example):
+#SBATCH --ntasks-per-node=20
+#
+# Processors per task:
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out
+```
+
+Good for parallel Python, MATLAB, or R code on one node.
+
+# Parallel jobs:  Multi-node jobs
+
+```
+#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Number of nodes needed for use case:
+#SBATCH --nodes=2
+#
+# Tasks per node based on number of cores per node (example):
+#SBATCH --ntasks-per-node=20
+#
+# Processors per task (could change for hybrid threaded-multiprocess jobs):
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out
+```
+
+Useful for parallel Python, R, or MATLAB code run across multiple nodes.
+
+Could also simply use --ntasks and let Slurm work out how many nodes are needed.
 
 # GPU jobs
 
@@ -232,21 +308,13 @@ Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) h
   - You can request as many GPUs as your code will use.
   - You must request 2 CPUs for each GPU
 
+```
 #!/bin/bash
-# Job name:
-#SBATCH --job-name=test
-#
 # Account:
 #SBATCH --account=account_name
 #
 # Partition:
 #SBATCH --partition=savio2_gpu
-#
-# Number of nodes:
-#SBATCH --nodes=1
-#
-# Number of tasks (one for each GPU desired for use case) (example):
-#SBATCH --ntasks=1
 #
 # Processors per task (please always specify the total number of processors twice the number of GPUs):
 #SBATCH --cpus-per-task=2
@@ -259,6 +327,7 @@ Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) h
 #
 ## Command(s) to run (example):
 ./a.out
+```
 
 # Low-priority queue
 
@@ -271,10 +340,23 @@ Suppose I wanted to burst beyond the Statistics condo to run on 20 nodes. I'll i
 First I'll see if there are that many nodes even available.
 
 ```
-sinfo -p savio2
-srun -A co_stat -p savio2 --qos=savio_lowprio --nodes=20 -t 10:00 --pty bash
-## now look at environment variables to see my job can access 20 nodes:
-env | grep SLURM
+#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Quality of Service:
+#SBATCH --qos=savio_lowprio
+#
+#SBATCH --nodes=30
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run:
+echo "hello world"
 ```
 
 # HTC jobs (and long-running jobs)
@@ -282,12 +364,24 @@ env | grep SLURM
 There is a partition called the HTC partition that allows you to request cores individually rather than an entire node at a time. The nodes in this partition are faster than the other nodes.
 
 ```
-srun -A co_stat -p savio2_htc --cpus-per-task=2 -t 10:00 --pty bash
-## we can look at environment variables to verify our two cores
-env | grep SLURM
-module load python
-python calc.py >& calc.out &
-top
+#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=savio2_htc
+#
+# Number of tasks needed for use case (example):
+#SBATCH --ntasks=4
+#
+# Processors per task:
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out
 ```
 
 One can run jobs up to 10 days (using four or fewer cores) in this partition if you include `--qos=savio_long`.
