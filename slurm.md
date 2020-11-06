@@ -1,4 +1,4 @@
-% Savio introductory training: Basic usage of the Berkeley Savio high-performance computing cluster
+% Savio Slurm training: How job scheduling works
 % November 9, 2020
 % Nicolas Chan, Wei Feinstein, and Chris Paciorek
 
@@ -7,7 +7,7 @@
 
 We'll do this mostly as a demonstration. We encourage you to login to your account and try out the various examples yourself as we go through them.
 
-Much of this material is based on the extensive Savio documention we have prepared and continue to prepare, available at [http://research-it.berkeley.edu/services/high-performance-computing](http://research-it.berkeley.edu/services/high-performance-computing).
+Much of this material is based on the extensive Savio documention we have prepared and continue to prepare, available at [https://research-it.berkeley.edu/services/high-performance-computing](https://research-it.berkeley.edu/services/high-performance-computing).
 
 The materials for this tutorial are available using git at the short URL ([https://tinyurl.com/brc-nov20](https://tinyurl.com/brc-nov20)), the  GitHub URL ([https://github.com/ucb-rit/savio-training-slurm-2020](https://github.com/ucb-rit/savio-training-slurm-2020)), or simply as a [zip file](https://github.com/ucb-rit/savio-training-slurm-2020/archive/main.zip).
 
@@ -37,19 +37,19 @@ The materials for this tutorial are available using git at the short URL ([https
 
 This training session will cover the following topics:
 
- - Submitting Jobs (Chris)
-   - Parallel jobs
-   - Other kinds of jobs
-   - Possible submission errors
-   - Checking on running jobs
- - How Slurm Works (Wei)
-   - Introduction to queueing on clusters
-   - Slurm details
-   - How Slurm is set up on Savio
- - Common Queue Questions (Nicolas)
-   - Why isn't my job running (yet)?
-   - Estimating job start time
-   - Making jobs run sooner
+- Submitting Jobs (Chris)
+    - Parallel jobs
+    - Other kinds of jobs
+    - Checking on running jobs
+    - Possible submission errors
+- How Slurm Works (Wei)
+    - Introduction to queueing on clusters
+    - Slurm details
+    - How Slurm is set up on Savio
+- Common Queue Questions (Nicolas)
+    - Why isn't my job running (yet)?
+    - Estimating job start time
+    - Making jobs run sooner
      
 
 # The Savio cluster
@@ -74,7 +74,7 @@ Why is this necessary? Otherwise your jobs would be slowed down by other people'
 
 Savio uses Slurm to:
 
- 1) Allocate access to resources (compute nodes) to users' jobs
+ 1) Allocate access to resources (compute nodes) for users' jobs
  2) Start and monitor jobs on allocated resources
  3) Manage the queue of pending jobs
 
@@ -118,7 +118,7 @@ In contrast, through my FCA, I have access to the savio, savio2, big memory, HTC
 
 Let's see how to submit a simple job. If your job will only use the resources on a single node, you can do the following. 
 
-Here's an example job script that I'll run. You'll need to modify the --account value and possibly the --partition value.
+Here's an example job script that I'll run. You'll need to modify the `--account` value and possibly the `--partition` value.
 
 ```bash
 #!/bin/bash
@@ -215,7 +215,7 @@ Some common paradigms are:
 - hybrid jobs that use *c* CPUs for each of *n* tasks
     - e.g., MPI+threaded code
    
-There are lots more examples of job submission scripts for different kinds of parallelization (multi-node (MPI), multi-core (openMP), hybrid, etc.) [here](http://research-it.berkeley.edu/services/high-performance-computing/running-your-jobs#Job-submission-with-specific-resource-requirements).
+There are lots more examples of job submission scripts for different kinds of parallelization (multi-node (MPI), multi-core (openMP), hybrid, etc.) [here](https://research-it.berkeley.edu/services/high-performance-computing/running-your-jobs#Job-submission-with-specific-resource-requirements).
 
 # Parallel jobs: Threaded (e.g., openMP) job
 
@@ -333,7 +333,7 @@ Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) h
 
 Condo users have access to the broader compute resource that is limited only by the size of partitions, under the *savio_lowprio* QoS (queue). However this QoS does not get a priority as high as the general QoSs, such as *savio_normal* and *savio_debug*, or all the condo QoSs, and it is subject to preemption when all the other QoSs become busy. 
 
-More details can be found [in the *Low Priority Jobs* section of the user guide](http://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority).
+More details can be found [in the *Low Priority Jobs* section of the user guide](https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority).
 
 Suppose I wanted to burst beyond the Statistics condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.
 
@@ -392,7 +392,7 @@ You may have many serial jobs to run. It may be more cost-effective to collect t
 
 Here are some options:
 
-  - using [GNU parallel](http://research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/gnu-parallel) to run many computational tasks (e.g., thousands of simulations, scanning tens of thousands of parameter values, etc.) as part of single Savio job submission
+  - using [GNU parallel](https://research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/gnu-parallel) to run many computational tasks (e.g., thousands of simulations, scanning tens of thousands of parameter values, etc.) as part of single Savio job submission
   - using [single-node parallelism](https://github.com/berkeley-scf/tutorial-parallel-basics) and [multiple-node parallelism](https://github.com/berkeley-scf/tutorial-parallel-distributed) in Python, R, and MATLAB
     - parallel R tools such as *future*, *foreach*, *parLapply*, and *mclapply*
     - parallel Python tools such as  *ipyparallel*, *Dask*, and *ray*

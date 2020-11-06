@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="November 9, 2020" />
+  <title>Savio Slurm training: How job scheduling works</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Savio Slurm training: How job scheduling works</h1>
+<h2 class="author">November 9, 2020</h2>
+<h3 class="date">Nicolas Chan, Wei Feinstein, and Chris Paciorek</h3>
+</div>
+<h1 id="introduction">Introduction</h1>
+<p>We'll do this mostly as a demonstration. We encourage you to login to your account and try out the various examples yourself as we go through them.</p>
+<p>Much of this material is based on the extensive Savio documention we have prepared and continue to prepare, available at <a href="https://research-it.berkeley.edu/services/high-performance-computing" class="uri">https://research-it.berkeley.edu/services/high-performance-computing</a>.</p>
+<p>The materials for this tutorial are available using git at the short URL (<a href="https://tinyurl.com/brc-nov20" class="uri">https://tinyurl.com/brc-nov20</a>), the GitHub URL (<a href="https://github.com/ucb-rit/savio-training-slurm-2020" class="uri">https://github.com/ucb-rit/savio-training-slurm-2020</a>), or simply as a <a href="https://github.com/ucb-rit/savio-training-slurm-2020/archive/main.zip">zip file</a>.</p>
+<h1 id="how-to-get-additional-help">How to get additional help</h1>
+<ul>
+<li>For technical issues and questions about using Savio:
+<ul>
+<li>brc-hpc-help@berkeley.edu</li>
+</ul></li>
+<li>For questions about computing resources in general, including cloud computing:
+<ul>
+<li>brc@berkeley.edu</li>
+<li>office hours: Wed. 1:30-3:00 and Thur. 9:30-11:00 <a href="https://research-it.berkeley.edu/programs/berkeley-research-computing/research-computing-consulting">on Zoom</a></li>
+</ul></li>
+<li>For questions about data management (including HIPAA-protected data):
+<ul>
+<li>researchdata@berkeley.edu</li>
+<li>office hours: Wed. 1:30-3:00 and Thur. 9:30-11:00 <a href="https://research-it.berkeley.edu/programs/berkeley-research-computing/research-computing-consulting">on Zoom</a></li>
+</ul></li>
+</ul>
+<h1 id="upcoming-events-and-hiring">Upcoming events and hiring</h1>
+<ul>
+<li>Research IT is hiring graduate students as <a href="https://research-it.berkeley.edu/brc/domain-consultant">domain consultants</a>. Please talk to one of us if interested.</li>
+<li><a href="https://research-it.berkeley.edu/services/sensitive-and-protected-data">Sensitive Data</a>: We are building a service and platform for researchers working with sensitive data. Secure VMs are available now and secure HPC cluster + storage are coming soon at a baseline capacity at no cost. Please get in touch if you are working with sensitive data.</li>
+<li><a href="https://www.meetup.com/ucberkeley_cloudmeetup/">Cloud Computing Meetup</a>
+<ul>
+<li>Monthly on last Tuesday</li>
+<li>Next meeting on Tuesday November 24</li>
+</ul></li>
+<li><a href="https://dlab.berkeley.edu/working-groups/securing-research-data-working-group">Securing Research Data Working Group</a>
+<ul>
+<li>Monthly, next meeting Monday November 23</li>
+</ul></li>
+</ul>
+<h1 id="outline">Outline</h1>
+<p>This training session will cover the following topics:</p>
+<ul>
+<li>Submitting Jobs (Chris)
+<ul>
+<li>Parallel jobs</li>
+<li>Other kinds of jobs</li>
+<li>Checking on running jobs</li>
+<li>Possible submission errors</li>
+</ul></li>
+<li>How Slurm Works (Wei)
+<ul>
+<li>Introduction to queueing on clusters</li>
+<li>Slurm details</li>
+<li>How Slurm is set up on Savio</li>
+</ul></li>
+<li>Common Queue Questions (Nicolas)
+<ul>
+<li>Why isn't my job running (yet)?</li>
+<li>Estimating job start time</li>
+<li>Making jobs run sooner</li>
+</ul></li>
+</ul>
+<h1 id="the-savio-cluster">The Savio cluster</h1>
+<p>Savio is a Linux cluster - by cluster we mean a set of computers networked together such that you can:</p>
+<ol style="list-style-type: decimal">
+<li>access the system by logging into a &quot;login node&quot;</li>
+<li>access your files on the system from any of the computers</li>
+<li>run your computations across one or more of the &quot;compute nodes&quot;
+<ul>
+<li>your work might use parallelization to do computation on more than one CPU</li>
+<li>you can also run &quot;serial&quot; jobs that use a single CPU</li>
+</ul></li>
+</ol>
+<h1 id="conceptual-diagram-of-savio">Conceptual diagram of Savio</h1>
+<center>
+<img src="savio_diagram.jpeg">
+</center>
+<h1 id="slurms-job">Slurm's job</h1>
+<p>All computations are done by submitting jobs to the scheduling software that manages jobs on the cluster, called Slurm.</p>
+<p>Why is this necessary? Otherwise your jobs would be slowed down by other people's jobs running on the same node. This also allows everyone to fairly share Savio.</p>
+<p>Savio uses Slurm to:</p>
+<ol style="list-style-type: decimal">
+<li>Allocate access to resources (compute nodes) for users' jobs</li>
+<li>Start and monitor jobs on allocated resources</li>
+<li>Manage the queue of pending jobs</li>
+</ol>
+<h1 id="submitting-jobs-accounts-and-partitions">Submitting jobs: accounts and partitions</h1>
+<p>When submitting a job, the main things you need to indicate are the project account you are using and the partition. Note that their is a default value for the project account, but if you have access to multiple accounts such as an FCA and a condo, it's good practice to specify it.</p>
+<p>You can see what accounts you have access to and which partitions within those accounts as follows:</p>
+<pre><code>sacctmgr -p show associations user=SAVIO_USERNAME</code></pre>
+<p>Here's an example of the output for a user who has access to an FCA, a condo, and a special partner account:</p>
+<pre><code>Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
+brc|co_stat|paciorek|savio2_1080ti|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio2_knl|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio2_bigmem|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio2_gpu|1||||||||||||savio_lowprio,stat_gpu2_normal|stat_gpu2_normal||
+brc|co_stat|paciorek|savio2_htc|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio_bigmem|1||||||||||||savio_lowprio|savio_lowprio||
+brc|co_stat|paciorek|savio2|1||||||||||||savio_lowprio,stat_savio2_normal|stat_savio2_normal||
+brc|fc_paciorek|paciorek|savio2_1080ti|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio2_knl|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio2_gpu|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio2_htc|1||||||||||||savio_debug,savio_long,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio2_bigmem|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio2|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio|1||||||||||||savio_debug,savio_normal|savio_normal||
+brc|fc_paciorek|paciorek|savio_bigmem|1||||||||||||savio_debug,savio_normal|savio_normal||</code></pre>
+<p>If you are part of a condo, you'll notice that you have <em>low-priority</em> access to certain partitions. For example I am part of the statistics condo <em>co_stat</em>, which owns some savio2 nodes and savio2_gpu nodes and therefore I have normal access to those, but I can also burst beyond the condo and use other partitions at low-priority (see below).</p>
+<p>In contrast, through my FCA, I have access to the savio, savio2, big memory, HTC, and GPU partitions all at normal priority.</p>
+<h1 id="submitting-a-batch-job">Submitting a batch job</h1>
+<p>Let's see how to submit a simple job. If your job will only use the resources on a single node, you can do the following.</p>
+<p>Here's an example job script that I'll run. You'll need to modify the <code>--account</code> value and possibly the <code>--partition</code> value.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co"># Job name:</span>
+<span class="co">#SBATCH --job-name=test</span>
+<span class="co">#</span>
+<span class="co"># Account:</span>
+<span class="co">#SBATCH --account=co_stat</span>
+<span class="co">#</span>
+<span class="co"># Partition:</span>
+<span class="co">#SBATCH --partition=savio2</span>
+<span class="co">#</span>
+<span class="co"># Wall clock limit (30 seconds here):</span>
+<span class="co">#SBATCH --time=00:00:30</span>
+<span class="co">#</span>
+<span class="co">## Command(s) to run:</span>
+<span class="ex">module</span> load python/3.6
+<span class="ex">python</span> calc.py <span class="op">&gt;</span><span class="kw">&amp;</span> <span class="ex">calc.out</span></code></pre></div>
+<h1 id="monitoring-jobs">Monitoring jobs</h1>
+<p>Now let's submit and monitor the job:</p>
+<pre><code>sbatch job.sh
+
+squeue -j &lt;JOB_ID&gt;
+
+wwall -j &lt;JOB_ID&gt;</code></pre>
+<p>After a job has completed (or been terminated/cancelled), you can review the maximum memory used (and other information) via the sacct command.</p>
+<pre><code>sacct -j &lt;JOB_ID&gt; --format=JobID,JobName,MaxRSS,Elapsed</code></pre>
+<p>MaxRSS will show the maximum amount of memory that the job used in kilobytes.</p>
+<p>You can also login to the node where you are running and use commands like <em>top</em> and <em>ps</em>:</p>
+<pre><code>srun --jobid=&lt;JOB_ID&gt; --pty /bin/bash</code></pre>
+<h1 id="parallel-job-submission">Parallel job submission</h1>
+<p>If you are submitting a job that uses multiple nodes, you'll need to carefully specify the resources you need. The key flags for use in your job script are:</p>
+<ul>
+<li><code>--nodes</code> (or <code>-N</code>): indicates the number of nodes to use</li>
+<li><code>--ntasks-per-node</code>: indicates the number of tasks (i.e., processes) one wants to run on each node</li>
+<li><code>--cpus-per-task</code> (or <code>-c</code>): indicates the number of cpus to be used for each task</li>
+</ul>
+<p>In addition, in some cases it can make sense to use the <code>--ntasks</code> (or <code>-n</code>) option to indicate the total number of tasks and let the scheduler determine how many nodes and tasks per node are needed. In general <code>--cpus-per-task</code> will be 1 except when running threaded code.</p>
+<p>Here's an example job script for a job that uses MPI for parallelizing over multiple nodes:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co"># Account:</span>
+<span class="co">#SBATCH --account=account_name</span>
+<span class="co">#</span>
+<span class="co"># Partition:</span>
+<span class="co">#SBATCH --partition=partition_name</span>
+<span class="co">#</span>
+<span class="co"># Number of MPI tasks needed for use case (example):</span>
+<span class="co">#SBATCH --ntasks=40</span>
+<span class="co">#</span>
+<span class="co"># Processors per task:</span>
+<span class="co">#SBATCH --cpus-per-task=1</span>
+<span class="co">#</span>
+<span class="co"># Wall clock limit:</span>
+<span class="co">#SBATCH --time=00:00:30</span>
+<span class="co">#</span>
+<span class="co">## Command(s) to run (example):</span>
+<span class="ex">module</span> load intel openmpi
+<span class="co">## This will run a.out using 40 (i.e., $SLURM_NTASKS) MPI tasks</span>
+<span class="ex">mpirun</span> ./a.out</code></pre></div>
+<p>When you write your code, you may need to specify information about the number of cores to use. SLURM will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded.</p>
+<p>Here are some of the variables that may be useful: SLURM_NTASKS, SLURM_CPUS_PER_TASK, SLURM_NODELIST, SLURM_NNODES.</p>
+<p>Some common paradigms are:</p>
+<ul>
+<li>1 node, many CPUs
+<ul>
+<li>openMP/threaded jobs - 1 task, <em>c</em> CPUs for the task</li>
+<li>Python/R/GNU parallel - many tasks, 1 per CPU at any given time</li>
+</ul></li>
+<li>many nodes, many CPUs
+<ul>
+<li>MPI jobs that use 1 CPU per task for each of <em>n</em> tasks, spread across multiple nodes</li>
+<li>Python/R/GNU parallel - many tasks, 1 per CPU at any given time</li>
+</ul></li>
+<li>hybrid jobs that use <em>c</em> CPUs for each of <em>n</em> tasks
+<ul>
+<li>e.g., MPI+threaded code</li>
+</ul></li>
+</ul>
+<p>There are lots more examples of job submission scripts for different kinds of parallelization (multi-node (MPI), multi-core (openMP), hybrid, etc.) <a href="https://research-it.berkeley.edu/services/high-performance-computing/running-your-jobs#Job-submission-with-specific-resource-requirements">here</a>.</p>
+<h1 id="parallel-jobs-threaded-e.g.-openmp-job">Parallel jobs: Threaded (e.g., openMP) job</h1>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Specify one task:
+#SBATCH --ntasks-per-node=1
+#
+# Number of processors for single task needed for use case (example):
+#SBATCH --cpus-per-task=4
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+./a.out</code></pre>
+<p>Also useful for parallel Python, MATLAB, or R code on one node.</p>
+<h1 id="parallel-jobs-multi-process-jobs">Parallel jobs: Multi-process jobs</h1>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Request one node:
+#SBATCH --nodes=1
+#
+# Specify number of tasks for use case (example):
+#SBATCH --ntasks-per-node=20
+#
+# Processors per task:
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out</code></pre>
+<p>Good for parallel Python, MATLAB, or R code on one node.</p>
+<h1 id="parallel-jobs-multi-node-jobs">Parallel jobs: Multi-node jobs</h1>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Number of nodes needed for use case:
+#SBATCH --nodes=2
+#
+# Tasks per node based on number of cores per node (example):
+#SBATCH --ntasks-per-node=20
+#
+# Processors per task (could change for hybrid threaded-multiprocess jobs):
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out</code></pre>
+<p>Useful for parallel Python, R, or MATLAB code run across multiple nodes.</p>
+<p>Could also simply use --ntasks and let Slurm work out how many nodes are needed.</p>
+<h1 id="gpu-jobs">GPU jobs</h1>
+<p>Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) have multiple GPUs on each node.</p>
+<ul>
+<li>You can request as many GPUs as your code will use.</li>
+<li>You must request 2 CPUs for each GPU</li>
+</ul>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=savio2_gpu
+#
+# Processors per task (please always specify the total number of processors twice the number of GPUs):
+#SBATCH --cpus-per-task=2
+#
+#Number of GPUs, this can be in the format of &quot;gpu:[1-4]&quot;, or &quot;gpu:K80:[1-4] with the type included
+#SBATCH --gres=gpu:1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out</code></pre>
+<h1 id="low-priority-queue">Low-priority queue</h1>
+<p>Condo users have access to the broader compute resource that is limited only by the size of partitions, under the <em>savio_lowprio</em> QoS (queue). However this QoS does not get a priority as high as the general QoSs, such as <em>savio_normal</em> and <em>savio_debug</em>, or all the condo QoSs, and it is subject to preemption when all the other QoSs become busy.</p>
+<p>More details can be found <a href="https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority">in the <em>Low Priority Jobs</em> section of the user guide</a>.</p>
+<p>Suppose I wanted to burst beyond the Statistics condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.</p>
+<p>First I'll see if there are that many nodes even available.</p>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=partition_name
+#
+# Quality of Service:
+#SBATCH --qos=savio_lowprio
+#
+#SBATCH --nodes=30
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run:
+echo &quot;hello world&quot;</code></pre>
+<h1 id="htc-jobs-and-long-running-jobs">HTC jobs (and long-running jobs)</h1>
+<p>There is a partition called the HTC partition that allows you to request cores individually rather than an entire node at a time. The nodes in this partition are faster than the other nodes.</p>
+<pre><code>#!/bin/bash
+# Account:
+#SBATCH --account=account_name
+#
+# Partition:
+#SBATCH --partition=savio2_htc
+#
+# Number of tasks needed for use case (example):
+#SBATCH --ntasks=4
+#
+# Processors per task:
+#SBATCH --cpus-per-task=1
+#
+# Wall clock limit:
+#SBATCH --time=00:00:30
+#
+## Command(s) to run (example):
+./a.out</code></pre>
+<p>One can run jobs up to 10 days (using four or fewer cores) in this partition if you include <code>--qos=savio_long</code>.</p>
+<h1 id="alternatives-to-the-htc-partition-for-collections-of-serial-jobs">Alternatives to the HTC partition for collections of serial jobs</h1>
+<p>You may have many serial jobs to run. It may be more cost-effective to collect those jobs together and run them across multiple cores on one or more nodes.</p>
+<p>Here are some options:</p>
+<ul>
+<li>using <a href="https://research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/gnu-parallel">GNU parallel</a> to run many computational tasks (e.g., thousands of simulations, scanning tens of thousands of parameter values, etc.) as part of single Savio job submission</li>
+<li>using <a href="https://github.com/berkeley-scf/tutorial-parallel-basics">single-node parallelism</a> and <a href="https://github.com/berkeley-scf/tutorial-parallel-distributed">multiple-node parallelism</a> in Python, R, and MATLAB
+<ul>
+<li>parallel R tools such as <em>future</em>, <em>foreach</em>, <em>parLapply</em>, and <em>mclapply</em></li>
+<li>parallel Python tools such as <em>ipyparallel</em>, <em>Dask</em>, and <em>ray</em></li>
+<li>parallel functionality in MATLAB through <em>parfor</em></li>
+</ul></li>
+</ul>
+<h1 id="some-possible-submission-errors">Some possible submission errors</h1>
+<p>Here are some errors that might result in your job never even being queued.</p>
+<p>Make sure account/partition/QoS combo is legitimate:</p>
+<pre><code>[paciorek@ln002 ~]$ srun -A co_stat -t 5:00 -q savio_normal -p savio3 --pty bash
+srun: error: Unable to allocate resources: Invalid qos specification</code></pre>
+<p>Request 2 CPUs for each GPU:</p>
+<pre><code>[paciorek@ln002 ~]$ srun -A ac_scsguest -t 5:00 -p savio2_gpu --gres=gpu:1 --pty bash
+srun: error: Unable to allocate resources: Invalid generic resource (gres) specification</code></pre>
+<p>Need to request FCA renewal or pay for extra service units:</p>
+<pre><code>[paciorek@ln002 ~]$  srun -A fc_paciorek -p savio2  -t 5:00 --pty bash
+srun: error: This user/account pair does not have enough service units to afford this job&#39;s estimated cost</code></pre>
+<p>However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.</p>
+<h1 id="common-queue-questions-nicolas">Common Queue Questions (Nicolas)</h1>
+<ul>
+<li>Why isn't my job running (yet)?</li>
+<li>When is my job expected to start?</li>
+<li>How can I get my job to start sooner?</li>
+</ul>
+<h1 id="why-isnt-my-job-running-yet">Why isn't my job running (yet)?</h1>
+<p>Could be for various reasons, including:</p>
+<ul>
+<li>Waiting for other higher priority jobs to finish</li>
+<li>Running this job would exceed a condo/QoS limit</li>
+<li>Incompatible parameters with the QoS (even though it made it to the queue)</li>
+</ul>
+<h1 id="introducing-sq">Introducing <code>sq</code></h1>
+<p>We developed a new tool to diagnose issues:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">module</span> load sq
+<span class="ex">sq</span></code></pre></div>
+<p>You can also use it as an <code>squeue</code> replacement:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sq</span> -aq</code></pre></div>
+<h1 id="sq-example-scenarios"><code>sq</code> Example Scenarios</h1>
+<ul>
+<li>The job would intersect with downtime so the job will run <em>after</em> the downtime</li>
+<li>Condo users have a fixed number of nodes with their condo QoS</li>
+<li>Try using <code>savio_lowprio</code> QoS</li>
+<li>Job is requesting longer wall-clock time than is allowed (<code>QOSMaxWallDurationPerJobLimit</code>)</li>
+</ul>
+<h1 id="sq-demo"><code>sq</code> Demo</h1>
+<p>Demo QOSGrp</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sq</span> -u <span class="st">&quot;</span><span class="va">$(</span><span class="ex">squeue</span> -o %all -P <span class="kw">|</span> <span class="fu">grep</span> -i qosgrp <span class="kw">|</span> <span class="fu">cut</span> -d<span class="st">&#39;|&#39;</span> -f21 <span class="kw">|</span> <span class="ex">shuf</span> <span class="kw">|</span> <span class="fu">head</span> -n1<span class="va">)</span><span class="st">&quot;</span></code></pre></div>
+<h1 id="squeue"><code>squeue</code></h1>
+<ul>
+<li>If you need more specific information, you can use Slurm's own <code>squeue</code>.</li>
+<li><code>REASON</code> are explained in <code>man squeue</code></li>
+</ul>
+<h1 id="common-reason">Common <code>REASON</code></h1>
+<ul>
+<li><code>PRIORITY</code> - There are other higher priority jobs being allocated nodes</li>
+<li><code>RESOURCES</code> - This job is next in priority and is waiting for available nodes</li>
+</ul>
+<h1 id="when-is-my-job-expected-to-start-pending">When is my job expected to start? (PENDING)</h1>
+<p>Check how many other pending jobs there are in the queue:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">squeue</span> -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY</code></pre></div>
+<p>Higher priority means it will try to run sooner.</p>
+<h1 id="when-is-my-job-expected-to-start-resources">When is my job expected to start? (RESOURCES)</h1>
+<p>If status is <code>RESOURCES</code>, you may check:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">squeue</span> --start -u <span class="va">$USER</span></code></pre></div>
+<p>to get an <em>estimated</em> start time.</p>
+<h1 id="how-can-i-get-my-job-to-start-sooner">How can I get my job to start sooner?</h1>
+<ul>
+<li>Shorten the time limit. Slurm may be able to fit a shorter job in a small gap between other jobs.</li>
+<li>Request fewer nodes (or cores on partitions scheduled by cores). Perhaps there are a few nodes available right now but you would have to wait for other jobs to release other nodes if you wanted more.</li>
+<li>Choose condo QoS if possible for higher priority.</li>
+<li>Choose a partition with more idle nodes</li>
+<li><code>sinfo -o %P,%A</code> (Partition, Allocated/Idle)</li>
+<li>View on our <a href="https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2">Savio status dashboard</a></li>
+<li>High recent usage decreases FCA priority.</li>
+</ul>
+</body>
+</html>
