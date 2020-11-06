@@ -217,8 +217,17 @@ wwall -j &lt;JOB_ID&gt;</code></pre>
 <span class="ex">module</span> load intel openmpi
 <span class="co">## This will run a.out using 40 (i.e., $SLURM_NTASKS) MPI tasks</span>
 <span class="ex">mpirun</span> ./a.out</code></pre></div>
-<p>When you write your code, you may need to specify information about the number of cores to use. SLURM will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded.</p>
-<p>Here are some of the variables that may be useful: SLURM_NTASKS, SLURM_CPUS_PER_TASK, SLURM_NODELIST, SLURM_NNODES.</p>
+<h1 id="slurm-related-environment-variables">Slurm-related environment variables</h1>
+<p>When you write your code, you may need to specify information about the number of cores to use. Slurm will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded.</p>
+<p>Here are some of the variables that may be useful:</p>
+<ul>
+<li>SLURM_NTASKS</li>
+<li>SLURM_CPUS_PER_TASK</li>
+<li>SLURM_CPUS_ON_NODE</li>
+<li>SLURM_NODELIST</li>
+<li>SLURM_NNODES</li>
+</ul>
+<h1 id="various-kinds-of-parallel-jobs">Various kinds of parallel jobs</h1>
 <p>Some common paradigms are:</p>
 <ul>
 <li>1 node, many CPUs
@@ -258,6 +267,8 @@ wwall -j &lt;JOB_ID&gt;</code></pre>
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 ./a.out</code></pre>
 <p>Also useful for parallel Python, MATLAB, or R code on one node.</p>
+<p>Caution 1: this script will not use all the cores on a node!</p>
+<p>Caution 2: threaded code may not scale well, so may not effectively use all cores on a node if only running one threaded process.</p>
 <h1 id="parallel-jobs-multi-process-jobs">Parallel jobs: Multi-process jobs</h1>
 <pre><code>#!/bin/bash
 # Account:
@@ -332,11 +343,11 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 <h1 id="low-priority-queue">Low-priority queue</h1>
 <p>Condo users have access to the broader compute resource that is limited only by the size of partitions, under the <em>savio_lowprio</em> QoS (queue). However this QoS does not get a priority as high as the general QoSs, such as <em>savio_normal</em> and <em>savio_debug</em>, or all the condo QoSs, and it is subject to preemption when all the other QoSs become busy.</p>
 <p>More details can be found <a href="https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority">in the <em>Low Priority Jobs</em> section of the user guide</a>.</p>
-<p>Suppose I wanted to burst beyond the Statistics condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.</p>
+<p>Suppose I wanted to burst beyond my condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.</p>
 <p>First I'll see if there are that many nodes even available.</p>
 <pre><code>#!/bin/bash
 # Account:
-#SBATCH --account=account_name
+#SBATCH --account=co_your_condo
 #
 # Partition:
 #SBATCH --partition=partition_name
@@ -360,18 +371,16 @@ echo &quot;hello world&quot;</code></pre>
 # Partition:
 #SBATCH --partition=savio2_htc
 #
-# Number of tasks needed for use case (example):
-#SBATCH --ntasks=4
-#
 # Processors per task:
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #
 # Wall clock limit:
 #SBATCH --time=00:00:30
 #
 ## Command(s) to run (example):
 ./a.out</code></pre>
-<p>One can run jobs up to 10 days (using four or fewer cores) in this partition if you include <code>--qos=savio_long</code>.</p>
+<p>Here I get 4 cores by asking for 4 cpus-per-task. Could also do with --ntasks=4, but would need --nodes=1 to guarantee all cores are on one node.</p>
+<p><strong>One can run jobs up to 10 days (using four or fewer cores) in this partition if you include <code>--qos=savio_long</code>.</strong></p>
 <h1 id="alternatives-to-the-htc-partition-for-collections-of-serial-jobs">Alternatives to the HTC partition for collections of serial jobs</h1>
 <p>You may have many serial jobs to run. It may be more cost-effective to collect those jobs together and run them across multiple cores on one or more nodes.</p>
 <p>Here are some options:</p>
@@ -386,15 +395,24 @@ echo &quot;hello world&quot;</code></pre>
 </ul>
 <h1 id="some-possible-submission-errors">Some possible submission errors</h1>
 <p>Here are some errors that might result in your job never even being queued.</p>
-<p>Make sure account/partition/QoS combo is legitimate:</p>
+<ul>
+<li>Make sure account/partition/QoS combo is legitimate:</li>
+</ul>
 <pre><code>[paciorek@ln002 ~]$ srun -A co_stat -t 5:00 -q savio_normal -p savio3 --pty bash
 srun: error: Unable to allocate resources: Invalid qos specification</code></pre>
-<p>Request 2 CPUs for each GPU:</p>
+<ul>
+<li>Request 2 CPUs for each GPU:</li>
+</ul>
 <pre><code>[paciorek@ln002 ~]$ srun -A ac_scsguest -t 5:00 -p savio2_gpu --gres=gpu:1 --pty bash
 srun: error: Unable to allocate resources: Invalid generic resource (gres) specification</code></pre>
-<p>Need to request FCA renewal or pay for extra service units:</p>
+<ul>
+<li>Need to request FCA renewal or pay for extra service units:</li>
+</ul>
 <pre><code>[paciorek@ln002 ~]$  srun -A fc_paciorek -p savio2  -t 5:00 --pty bash
-srun: error: This user/account pair does not have enough service units to afford this job&#39;s estimated cost</code></pre>
+srun: error: This user/account pair does not have enough service units to afford this job&#39;s estimated cost
+
+[paciorek@ln002 ~]$  check_usage.sh -a fc_paciorek
+Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs, 0.05 CPUHrs, 0.05 SUs used from an allocation of 0 SUs.</code></pre>
 <p>However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.</p>
 <h1 id="common-queue-questions-nicolas">Common Queue Questions (Nicolas)</h1>
 <ul>

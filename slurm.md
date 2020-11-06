@@ -200,9 +200,19 @@ module load intel openmpi
 mpirun ./a.out
 ```
 
-When you write your code, you may need to specify information about the number of cores to use. SLURM will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded. 
+# Slurm-related environment variables
 
-Here are some of the variables that may be useful: SLURM_NTASKS, SLURM_CPUS_PER_TASK, SLURM_NODELIST, SLURM_NNODES.
+When you write your code, you may need to specify information about the number of cores to use. Slurm will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded. 
+
+Here are some of the variables that may be useful:
+
+ - SLURM_NTASKS
+ - SLURM_CPUS_PER_TASK
+ - SLURM_CPUS_ON_NODE
+ - SLURM_NODELIST
+ - SLURM_NNODES
+
+# Various kinds of parallel jobs
 
 Some common paradigms are:
 
@@ -242,6 +252,10 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 ```
 
 Also useful for parallel Python, MATLAB, or R code on one node.
+
+Caution 1: this script will not use all the cores on a node!
+
+Caution 2: threaded code may not scale well, so may not effectively use all cores on a node if only running one threaded process.
 
 # Parallel jobs: Multi-process jobs
 
@@ -335,14 +349,14 @@ Condo users have access to the broader compute resource that is limited only by 
 
 More details can be found [in the *Low Priority Jobs* section of the user guide](https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority).
 
-Suppose I wanted to burst beyond the Statistics condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.
+Suppose I wanted to burst beyond my condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.
 
 First I'll see if there are that many nodes even available.
 
 ```
 #!/bin/bash
 # Account:
-#SBATCH --account=account_name
+#SBATCH --account=co_your_condo
 #
 # Partition:
 #SBATCH --partition=partition_name
@@ -371,11 +385,8 @@ There is a partition called the HTC partition that allows you to request cores i
 # Partition:
 #SBATCH --partition=savio2_htc
 #
-# Number of tasks needed for use case (example):
-#SBATCH --ntasks=4
-#
 # Processors per task:
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #
 # Wall clock limit:
 #SBATCH --time=00:00:30
@@ -384,7 +395,9 @@ There is a partition called the HTC partition that allows you to request cores i
 ./a.out
 ```
 
-One can run jobs up to 10 days (using four or fewer cores) in this partition if you include `--qos=savio_long`.
+Here I get 4 cores by asking for 4 cpus-per-task. Could also do with --ntasks=4, but would need --nodes=1 to guarantee all cores are on one node.
+
+**One can run jobs up to 10 days (using four or fewer cores) in this partition if you include `--qos=savio_long`.**
 
 # Alternatives to the HTC partition for collections of serial jobs
  
@@ -403,25 +416,28 @@ Here are some options:
 
 Here are some errors that might result in your job never even being queued.
 
-Make sure account/partition/QoS combo is legitimate:
+- Make sure account/partition/QoS combo is legitimate:
 
 ```
 [paciorek@ln002 ~]$ srun -A co_stat -t 5:00 -q savio_normal -p savio3 --pty bash
 srun: error: Unable to allocate resources: Invalid qos specification
 ```
 
-Request 2 CPUs for each GPU:
+- Request 2 CPUs for each GPU:
 
 ```
 [paciorek@ln002 ~]$ srun -A ac_scsguest -t 5:00 -p savio2_gpu --gres=gpu:1 --pty bash
 srun: error: Unable to allocate resources: Invalid generic resource (gres) specification
 ```
 
-Need to request FCA renewal or pay for extra service units:
+- Need to request FCA renewal or pay for extra service units:
 
 ```
 [paciorek@ln002 ~]$  srun -A fc_paciorek -p savio2  -t 5:00 --pty bash
 srun: error: This user/account pair does not have enough service units to afford this job's estimated cost
+
+[paciorek@ln002 ~]$  check_usage.sh -a fc_paciorek
+Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs, 0.05 CPUHrs, 0.05 SUs used from an allocation of 0 SUs.
 ```
 
 However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.  
