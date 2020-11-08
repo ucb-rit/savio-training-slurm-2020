@@ -455,7 +455,7 @@ However, in most cases, even if you provide invalid values, your job will be que
 - Optimize how jobs with different resource requirements can be accommodated 
 
 # Slurm architecture
-![Slurm](/Users/wfeinstein/Desktop/LBL-notes/arch.gif)
+![Slurm](images/arch.gif)
 
 # Slurmdbd - database daemon
 - A mysql database daemon runs on the master node
@@ -571,7 +571,7 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 ```
 
 # Backfill
-![](/Users/wfeinstein/Desktop/LBL-notes/backfill.png){ width=60% }
+![](images/backfill.png)
 
 - Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:
   - Each job submission
