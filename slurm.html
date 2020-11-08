@@ -1,60 +1,226 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="November 9, 2020" />
   <title>Savio Slurm training: How job scheduling works</title>
-  <style type="text/css">code{white-space: pre;}</style>
-  <style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
 </head>
 <body>
-<div id="header">
+<header id="title-block-header">
 <h1 class="title">Savio Slurm training: How job scheduling works</h1>
-<h2 class="author">November 9, 2020</h2>
-<h3 class="date">Nicolas Chan, Wei Feinstein, and Chris Paciorek</h3>
-</div>
+<p class="author">November 9, 2020</p>
+<p class="date">Nicolas Chan, Wei Feinstein, and Chris Paciorek</p>
+</header>
 <h1 id="introduction">Introduction</h1>
-<p>We'll do this mostly as a demonstration. We encourage you to login to your account and try out the various examples yourself as we go through them.</p>
-<p>Much of this material is based on the extensive Savio documention we have prepared and continue to prepare, available at <a href="https://research-it.berkeley.edu/services/high-performance-computing" class="uri">https://research-it.berkeley.edu/services/high-performance-computing</a>.</p>
-<p>The materials for this tutorial are available using git at the short URL (<a href="https://tinyurl.com/brc-nov20" class="uri">https://tinyurl.com/brc-nov20</a>), the GitHub URL (<a href="https://github.com/ucb-rit/savio-training-slurm-2020" class="uri">https://github.com/ucb-rit/savio-training-slurm-2020</a>), or simply as a <a href="https://github.com/ucb-rit/savio-training-slurm-2020/archive/main.zip">zip file</a>.</p>
+<p>We’ll do this mostly as a demonstration. We encourage you to login to your account and try out the various examples yourself as we go through them.</p>
+<p>Much of this material is based on the extensive Savio documention we have prepared and continue to prepare, available at <a href="https://research-it.berkeley.edu/services/high-performance-computing">https://research-it.berkeley.edu/services/high-performance-computing</a>.</p>
+<p>The materials for this tutorial are available using git at the short URL (<a href="https://tinyurl.com/brc-nov20">https://tinyurl.com/brc-nov20</a>), the GitHub URL (<a href="https://github.com/ucb-rit/savio-training-slurm-2020">https://github.com/ucb-rit/savio-training-slurm-2020</a>), or simply as a <a href="https://github.com/ucb-rit/savio-training-slurm-2020/archive/main.zip">zip file</a>.</p>
 <h1 id="how-to-get-additional-help">How to get additional help</h1>
 <ul>
 <li>For technical issues and questions about using Savio:
@@ -104,40 +270,40 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul></li>
 <li>Common Queue Questions (Nicolas)
 <ul>
-<li>Why isn't my job running (yet)?</li>
+<li>Why isn’t my job running (yet)?</li>
 <li>Estimating job start time</li>
 <li>Making jobs run sooner</li>
 </ul></li>
 </ul>
 <h1 id="the-savio-cluster">The Savio cluster</h1>
 <p>Savio is a Linux cluster - by cluster we mean a set of computers networked together such that you can:</p>
-<ol style="list-style-type: decimal">
-<li>access the system by logging into a &quot;login node&quot;</li>
+<ol type="1">
+<li>access the system by logging into a “login node”</li>
 <li>access your files on the system from any of the computers</li>
-<li>run your computations across one or more of the &quot;compute nodes&quot;
+<li>run your computations across one or more of the “compute nodes”
 <ul>
 <li>your work might use parallelization to do computation on more than one CPU</li>
-<li>you can also run &quot;serial&quot; jobs that use a single CPU</li>
+<li>you can also run “serial” jobs that use a single CPU</li>
 </ul></li>
 </ol>
 <h1 id="conceptual-diagram-of-savio">Conceptual diagram of Savio</h1>
 <center>
 <img src="savio_diagram.jpeg">
 </center>
-<h1 id="slurms-job">Slurm's job</h1>
+<h1 id="slurms-job">Slurm’s job</h1>
 <p>All computations are done by submitting jobs to the scheduling software that manages jobs on the cluster, called Slurm.</p>
-<p>Why is this necessary? Otherwise your jobs would be slowed down by other people's jobs running on the same node. This also allows everyone to fairly share Savio.</p>
+<p>Why is this necessary? Otherwise your jobs would be slowed down by other people’s jobs running on the same node. This also allows everyone to fairly share Savio.</p>
 <p>Savio uses Slurm to:</p>
-<ol style="list-style-type: decimal">
-<li>Allocate access to resources (compute nodes) for users' jobs</li>
+<ol type="1">
+<li>Allocate access to resources (compute nodes) for users’ jobs</li>
 <li>Start and monitor jobs on allocated resources</li>
 <li>Manage the queue of pending jobs</li>
 </ol>
 <h1 id="submitting-jobs-accounts-and-partitions">Submitting jobs: accounts and partitions</h1>
-<p>When submitting a job, the main things you need to indicate are the project account you are using and the partition. Note that their is a default value for the project account, but if you have access to multiple accounts such as an FCA and a condo, it's good practice to specify it.</p>
+<p>When submitting a job, the main things you need to indicate are the project account you are using and the partition. Note that their is a default value for the project account, but if you have access to multiple accounts such as an FCA and a condo, it’s good practice to specify it.</p>
 <p>You can see what accounts you have access to and which partitions within those accounts as follows:</p>
 <pre><code>sacctmgr -p show associations user=SAVIO_USERNAME</code></pre>
-<p>Here's an example of the output for a user who has access to an FCA, a condo, and a special partner account:</p>
+<p>Here’s an example of the output for a user who has access to an FCA, a condo, and a special partner account:</p>
 <pre><code>Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 brc|co_stat|paciorek|savio2_1080ti|1||||||||||||savio_lowprio|savio_lowprio||
 brc|co_stat|paciorek|savio2_knl|1||||||||||||savio_lowprio|savio_lowprio||
@@ -155,29 +321,29 @@ brc|fc_paciorek|paciorek|savio2_bigmem|1||||||||||||savio_debug,savio_normal|sav
 brc|fc_paciorek|paciorek|savio2|1||||||||||||savio_debug,savio_normal|savio_normal||
 brc|fc_paciorek|paciorek|savio|1||||||||||||savio_debug,savio_normal|savio_normal||
 brc|fc_paciorek|paciorek|savio_bigmem|1||||||||||||savio_debug,savio_normal|savio_normal||</code></pre>
-<p>If you are part of a condo, you'll notice that you have <em>low-priority</em> access to certain partitions. For example I am part of the statistics condo <em>co_stat</em>, which owns some savio2 nodes and savio2_gpu nodes and therefore I have normal access to those, but I can also burst beyond the condo and use other partitions at low-priority (see below).</p>
+<p>If you are part of a condo, you’ll notice that you have <em>low-priority</em> access to certain partitions. For example I am part of the statistics condo <em>co_stat</em>, which owns some savio2 nodes and savio2_gpu nodes and therefore I have normal access to those, but I can also burst beyond the condo and use other partitions at low-priority (see below).</p>
 <p>In contrast, through my FCA, I have access to the savio, savio2, big memory, HTC, and GPU partitions all at normal priority.</p>
 <h1 id="submitting-a-batch-job">Submitting a batch job</h1>
-<p>Let's see how to submit a simple job. If your job will only use the resources on a single node, you can do the following.</p>
-<p>Here's an example job script that I'll run. You'll need to modify the <code>--account</code> value and possibly the <code>--partition</code> value.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
-<span class="co"># Job name:</span>
-<span class="co">#SBATCH --job-name=test</span>
-<span class="co">#</span>
-<span class="co"># Account:</span>
-<span class="co">#SBATCH --account=co_stat</span>
-<span class="co">#</span>
-<span class="co"># Partition:</span>
-<span class="co">#SBATCH --partition=savio2</span>
-<span class="co">#</span>
-<span class="co"># Wall clock limit (30 seconds here):</span>
-<span class="co">#SBATCH --time=00:00:30</span>
-<span class="co">#</span>
-<span class="co">## Command(s) to run:</span>
-<span class="ex">module</span> load python/3.6
-<span class="ex">python</span> calc.py <span class="op">&gt;</span><span class="kw">&amp;</span> <span class="ex">calc.out</span></code></pre></div>
+<p>Let’s see how to submit a simple job. If your job will only use the resources on a single node, you can do the following.</p>
+<p>Here’s an example job script that I’ll run. You’ll need to modify the <code>--account</code> value and possibly the <code>--partition</code> value.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Job name:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=test</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Account:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --account=co_stat</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Partition:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=savio2</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Wall clock limit (30 seconds here):</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=00:00:30</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">## Command(s) to run:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load python/3.6</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> calc.py <span class="op">&gt;&amp;</span> calc.out</span></code></pre></div>
 <h1 id="monitoring-jobs">Monitoring jobs</h1>
-<p>Now let's submit and monitor the job:</p>
+<p>Now let’s submit and monitor the job:</p>
 <pre><code>sbatch job.sh
 
 squeue -j &lt;JOB_ID&gt;
@@ -189,34 +355,34 @@ wwall -j &lt;JOB_ID&gt;</code></pre>
 <p>You can also login to the node where you are running and use commands like <em>top</em> and <em>ps</em>:</p>
 <pre><code>srun --jobid=&lt;JOB_ID&gt; --pty /bin/bash</code></pre>
 <h1 id="parallel-job-submission">Parallel job submission</h1>
-<p>If you are submitting a job that uses multiple nodes, you'll need to carefully specify the resources you need. The key flags for use in your job script are:</p>
+<p>If you are submitting a job that uses multiple nodes, you’ll need to carefully specify the resources you need. The key flags for use in your job script are:</p>
 <ul>
 <li><code>--nodes</code> (or <code>-N</code>): indicates the number of nodes to use</li>
 <li><code>--ntasks-per-node</code>: indicates the number of tasks (i.e., processes) one wants to run on each node</li>
 <li><code>--cpus-per-task</code> (or <code>-c</code>): indicates the number of cpus to be used for each task</li>
 </ul>
 <p>In addition, in some cases it can make sense to use the <code>--ntasks</code> (or <code>-n</code>) option to indicate the total number of tasks and let the scheduler determine how many nodes and tasks per node are needed. In general <code>--cpus-per-task</code> will be 1 except when running threaded code.</p>
-<p>Here's an example job script for a job that uses MPI for parallelizing over multiple nodes:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
-<span class="co"># Account:</span>
-<span class="co">#SBATCH --account=account_name</span>
-<span class="co">#</span>
-<span class="co"># Partition:</span>
-<span class="co">#SBATCH --partition=partition_name</span>
-<span class="co">#</span>
-<span class="co"># Number of MPI tasks needed for use case (example):</span>
-<span class="co">#SBATCH --ntasks=40</span>
-<span class="co">#</span>
-<span class="co"># Processors per task:</span>
-<span class="co">#SBATCH --cpus-per-task=1</span>
-<span class="co">#</span>
-<span class="co"># Wall clock limit:</span>
-<span class="co">#SBATCH --time=00:00:30</span>
-<span class="co">#</span>
-<span class="co">## Command(s) to run (example):</span>
-<span class="ex">module</span> load intel openmpi
-<span class="co">## This will run a.out using 40 (i.e., $SLURM_NTASKS) MPI tasks</span>
-<span class="ex">mpirun</span> ./a.out</code></pre></div>
+<p>Here’s an example job script for a job that uses MPI for parallelizing over multiple nodes:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Account:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --account=account_name</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Partition:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=partition_name</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Number of MPI tasks needed for use case (example):</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks=40</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Processors per task:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Wall clock limit:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=00:00:30</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">## Command(s) to run (example):</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load intel openmpi</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">## This will run a.out using 40 (i.e., $SLURM_NTASKS) MPI tasks</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="ex">mpirun</span> ./a.out</span></code></pre></div>
 <h1 id="slurm-related-environment-variables">Slurm-related environment variables</h1>
 <p>When you write your code, you may need to specify information about the number of cores to use. Slurm will provide a variety of variables that you can use in your code so that it adapts to the resources you have requested rather than being hard-coded.</p>
 <p>Here are some of the variables that may be useful:</p>
@@ -315,7 +481,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 ## Command(s) to run (example):
 ./a.out</code></pre>
 <p>Useful for parallel Python, R, or MATLAB code run across multiple nodes.</p>
-<p>Could also simply use --ntasks and let Slurm work out how many nodes are needed.</p>
+<p>Could also simply use –ntasks and let Slurm work out how many nodes are needed.</p>
 <h1 id="gpu-jobs">GPU jobs</h1>
 <p>Most of the GPU partitions (e.g., savio2_gpu, savio2_1080ti, savio3_gpu, etc.) have multiple GPUs on each node.</p>
 <ul>
@@ -343,8 +509,8 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 <h1 id="low-priority-queue">Low-priority queue</h1>
 <p>Condo users have access to the broader compute resource that is limited only by the size of partitions, under the <em>savio_lowprio</em> QoS (queue). However this QoS does not get a priority as high as the general QoSs, such as <em>savio_normal</em> and <em>savio_debug</em>, or all the condo QoSs, and it is subject to preemption when all the other QoSs become busy.</p>
 <p>More details can be found <a href="https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority">in the <em>Low Priority Jobs</em> section of the user guide</a>.</p>
-<p>Suppose I wanted to burst beyond my condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.</p>
-<p>First I'll see if there are that many nodes even available.</p>
+<p>Suppose I wanted to burst beyond my condo to run on 20 nodes. I’ll illustrate here with an interactive job though usually this would be for a batch job.</p>
+<p>First I’ll see if there are that many nodes even available.</p>
 <pre><code>#!/bin/bash
 # Account:
 #SBATCH --account=co_your_condo
@@ -379,7 +545,7 @@ echo &quot;hello world&quot;</code></pre>
 #
 ## Command(s) to run (example):
 ./a.out</code></pre>
-<p>Here I get 4 cores by asking for 4 cpus-per-task. Could also do with --ntasks=4, but would need --nodes=1 to guarantee all cores are on one node.</p>
+<p>Here I get 4 cores by asking for 4 cpus-per-task. Could also do with –ntasks=4, but would need –nodes=1 to guarantee all cores are on one node.</p>
 <p><strong>One can run jobs up to 10 days (using four or fewer cores) in this partition if you include <code>--qos=savio_long</code>.</strong></p>
 <h1 id="alternatives-to-the-htc-partition-for-collections-of-serial-jobs">Alternatives to the HTC partition for collections of serial jobs</h1>
 <p>You may have many serial jobs to run. It may be more cost-effective to collect those jobs together and run them across multiple cores on one or more nodes.</p>
@@ -414,13 +580,198 @@ srun: error: This user/account pair does not have enough service units to afford
 [paciorek@ln002 ~]$  check_usage.sh -a fc_paciorek
 Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs, 0.05 CPUHrs, 0.05 SUs used from an allocation of 0 SUs.</code></pre>
 <p>However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.</p>
+<h1 id="how-slurm-works-on-savio-wei">How Slurm works on Savio (Wei)</h1>
+<ul>
+<li>Introduction to queueing on clusters</li>
+<li>Slurm details</li>
+<li>How Slurm is set up on Savio</li>
+</ul>
+<h1 id="slurm-overview">Slurm Overview</h1>
+<ul>
+<li>An open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters</li>
+<li>Manage job submission and scheduling on Savio</li>
+<li>Control user access to the resources on Savio, different partitions, project account…</li>
+<li>Manages the queue of pending jobs based on assigning priorities to jobs</li>
+<li>Optimize how jobs with different resource requirements can be accommodated</li>
+</ul>
+<h1 id="slurm-architecture">Slurm architecture</h1>
+<figure>
+<img src="/Users/wfeinstein/Desktop/LBL-notes/arch.gif" alt="Slurm" /><figcaption aria-hidden="true">Slurm</figcaption>
+</figure>
+<h1 id="slurmdbd---database-daemon">Slurmdbd - database daemon</h1>
+<ul>
+<li>A mysql database daemon runs on the master node</li>
+<li>Tracks all user account information</li>
+<li>Tracks all job information</li>
+<li>Tracks all configuration information</li>
+<li>Partitions, qos, nodename and resources, all transactions, clustername</li>
+<li>Commands used for this database: sacctmgr</li>
+</ul>
+<h1 id="slurmd---node-management-daemon">Slurmd - Node management daemon</h1>
+<ul>
+<li>Runs on all the compute nodes</li>
+<li>Tracks state of a node (controls if down, up, idle, alloc)</li>
+<li>Tracks resources available on a node</li>
+<li>Tracks jobs running on the node</li>
+<li>Launch and kill jobs</li>
+</ul>
+<h1 id="slurmctld---control-daemon-runs-on-service-node">Slurmctld - control daemon runs on service node</h1>
+<ul>
+<li>Communicates to the SlurmBD for accounting information</li>
+<li>Communicates to the SlurmD for state of the nodes information
+<ul>
+<li>What resources are available</li>
+<li>What state the node is in (idle, allocated, drained, down)</li>
+<li>What job should be scheduled to run on what node and semi-reserve that node for the job</li>
+</ul></li>
+<li>Reads config files to determine how to configure Slurm, such as slurm.conf, gres.conf…</li>
+<li>Communicates and understands Slurm-plugins
+<ul>
+<li>spank_private_tmpshm</li>
+<li>spank_collect_script</li>
+<li>job_submit_collect_script</li>
+<li>spank_slurm_banking</li>
+</ul></li>
+<li>Slurm Authentication program - Munge</li>
+<li>User commands: sacct, squeue, sinfo, sbatch, etc</li>
+</ul>
+<h1 id="job-submission-process">Job submission process</h1>
+<ul>
+<li>srun, sbatch, salloc</li>
+<li>Job validation processes</li>
+<li>Prolog - setups environment variables - $TMPDIR</li>
+<li>Requested resources checked</li>
+<li>Job batched to slurmd node</li>
+<li>Job killed upon completion - epilog script ran to clean up processes</li>
+</ul>
+<h1 id="job-priority-factors">Job priority factors</h1>
+<ul>
+<li>Fairshare: usage and raw share</li>
+<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
+<li>Partition: same for all Savio partitions</li>
+<li>Agei: longer your job wait in a queue, higher priority your job get</li>
+<li>JobSize</li>
+</ul>
+<h1 id="fairshare-on-savio">Fairshare on Savio</h1>
+<ul>
+<li>Savio uses Slurm’s Fairshare system to prioritize amongst jobs in the queue.</li>
+<li>Fairshare assigns a numerical priority score to each job based on its characteristics.</li>
+<li>Usage:
+<ul>
+<li>a value between 0.0 and 1.0 that represents your proportional usage of the system</li>
+<li>quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.</li>
+<li>prioritizing groups and users who have not used Savio much recently over those who have</li>
+</ul></li>
+<li>Raw Shares: are assigned to each association by an admin
+<ul>
+<li>“Shares” is Raw Shares when normalized to 0.0</li>
+<li>1.0 Similar to slices of a pie</li>
+<li>represent the part of the system that is “yours”</li>
+</ul></li>
+<li>Check fairshare scores</li>
+</ul>
+<pre><code>   sshare -la |head -1 ; sshare -al |grep user_name
+   sshare -la |head -1 ; sshare -al |grep project_name</code></pre>
+<h1 id="quality-of-service-qos">Quality of Service (QOS)</h1>
+<ul>
+<li>The quality of service can be configured in various ways:
+<ul>
+<li>Max node count</li>
+<li>Max walltime</li>
+<li>Job Scheduling Priority</li>
+<li>Job Preemption</li>
+<li>Job Limits</li>
+</ul></li>
+</ul>
+<pre><code>[root@master ~]# sacctmgr show qos -p  format=&quot;Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt&quot;
+Name|MaxTRES|MaxWall|MaxTRESPU|MaxJobs|MaxSubmit|Priority|Preempt|
+normal||||||1000||
+savio_debug|node=4|00:30:00||||10000|savio_lowprio|
+savio_normal|node=24|3-00:00:00||||1000|savio_lowprio|
+savio_lowprio|node=24|3-00:00:00||||0||
+astro_normal|node=16|||||1000000|savio_lowprio|
+astro_debug|node=4|00:30:00||||10000000|savio_lowprio|
+aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
+...</code></pre>
+<pre><code>[root@master ~]# sacctmgr show qos -p|grep astro
+astro_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
+astro_debug|10000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
+astro_savio_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
+astro_savio_debug|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|</code></pre>
+<h1 id="savio-partitions-queues">Savio Partitions (queues)</h1>
+<pre><code>[root@master ~]# grep -i partition /etc/slurm/slurm.conf
+PriorityWeightPartition=0
+PartitionName=savio           Nodes=n0[004-095,100-167].savio[1]             Oversubscribe=Exclusive DefMemPerNode=64000
+PartitionName=savio_bigmem    Nodes=n0[096-099].savio[1]                     Oversubscribe=Exclusive DefMemPerNode=512000
+PartitionName=savio2          Nodes=n0[027-150,187-210,230-240,290-293].savio[2] Oversubscribe=Exclusive DefMemPerNode=63500
+PartitionName=savio2_htc      Nodes=n0[000-011,215-222].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=10600      LLN=Yes
+PartitionName=savio2_gpu      Nodes=n0[012-026,223-224].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=8000
+PartitionName=savio2_bigmem   Nodes=n0[151-186,282-289].savio[2]                 Oversubscribe=Exclusive DefMemPerNode=128000
+PartitionName=savio2_1080ti   Nodes=n0[227-229,298-302].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=8000
+PartitionName=savio2_knl      Nodes=n0[254-281,294-297].savio[2]                 Oversubscribe=Exclusive DefMemPerNode=190000
+PartitionName=savio3_bigmem   Nodes=n0[006-009,030-041,166-169].savio[3]         Oversubscribe=Exclusive DefMemPerNode=360000  # 384 GB
+PartitionName=savio3_xlmem    Nodes=n0[000-001].savio[3]                         Oversubscribe=Exclusive DefMemPerNode=1500000 #  1.5 TB
+PartitionName=savio3_gpu      Nodes=n000[4-5].savio[3]                           Oversubscribe=Yes       DefMemPerCPU=8000     #  64 GB total / 8 cores
+PartitionName=savio3_2080ti   Nodes=n0[134-138,143-145,158-161,174-176].savio[3] Oversubscribe=Yes       DefMemPerCPU=12000
+# partitionName can only be defined once for any given name, so 4rtx and 8rtx cannot have separate def for DefMemPerCPU
+PartitionName=savio3          Nodes=n0[010-029,042-125,126-133,139-142,146-149,150-157,170-173].savio[3] Oversubscribe=Exclusive DefMemPerNode=92000 
+PartitionName=cortex          Nodes=n0[000-013].cortex[0]                        Oversubscribe=Yes       DefMemPerCPU=2000
+PartitionName=vector          Nodes=n0[000-011].vector[0]                        Oversubscribe=Yes       DefMemPerCPU=4000
+PartitionName=testbed         Nodes=n0[000-003].testbed[0]                       Oversubscribe=Exclusive DefMemPerNode=2000
+</code></pre>
+<h1 id="backfill">Backfill</h1>
+<p><img src="/Users/wfeinstein/Desktop/LBL-notes/backfill.png" style="width:60.0%" /></p>
+<ul>
+<li>Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:
+<ul>
+<li>Each job submission</li>
+<li>Job completion on its allocated nodes</li>
+<li>At configuration changes</li>
+</ul></li>
+<li>Slurm parameters are configured to ensure backfill works: bf_window, bf_continue, bf_resolution</li>
+<li>Backfill start lower priority jobs if by doing so does not delay the expected start time of any higher priority jobs</li>
+<li><strong>Note</strong>: accurate and reasonable run times is required for backfill to start lower priority jobs</li>
+</ul>
+<h1 id="how-priorities-and-queueing-on-savio-work-1">How priorities and queueing on Savio work (1)</h1>
+<ul>
+<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
+<li>Condo usage
+<ul>
+<li>Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time.</li>
+<li>Additional jobs will be queued until usage drops below that limit.</li>
+<li>The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.</li>
+<li>Some circumstances, even when the condo’s usage is below the limit, a condo job might not start immediately
+<ul>
+<li>Because the partition is fully used, across all condo and FCA users of the given partition.</li>
+<li>This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage.</li>
+<li>Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available.</li>
+<li>Usually any lag in starting condo jobs under this circumstance is limited.</li>
+</ul></li>
+</ul></li>
+</ul>
+<h1 id="how-priorities-and-queueing-on-savio-work-2">How priorities and queueing on Savio work (2)</h1>
+<ul>
+<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
+<li>FCA jobs
+<ul>
+<li>Start when they reach the top of the queue and resources become available as running jobs finish.</li>
+<li>The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm.</li>
+<li>The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job.</li>
+<li>Jobs from multiple users within an FCA are then influenced by their individual recent usage.</li>
+<li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,
+<ul>
+<li>Priority for a given job depends inversely on that recent usage (based on the FCA the job is using).</li>
+<li>Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.</li>
+</ul></li>
+</ul></li>
+</ul>
 <h1 id="common-queue-questions-nicolas">Common Queue Questions (Nicolas)</h1>
 <ul>
-<li>Why isn't my job running (yet)?</li>
+<li>Why isn’t my job running (yet)?</li>
 <li>When is my job expected to start?</li>
 <li>How can I get my job to start sooner?</li>
 </ul>
-<h1 id="why-isnt-my-job-running-yet">Why isn't my job running (yet)?</h1>
+<h1 id="why-isnt-my-job-running-yet">Why isn’t my job running (yet)?</h1>
 <p>Could be for various reasons, including:</p>
 <ul>
 <li>Waiting for other higher priority jobs to finish</li>
@@ -429,24 +780,28 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 </ul>
 <h1 id="introducing-sq">Introducing <code>sq</code></h1>
 <p>We developed a new tool to diagnose issues:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">module</span> load sq
-<span class="ex">sq</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load sq</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span></span></code></pre></div>
 <p>You can also use it as an <code>squeue</code> replacement:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sq</span> -aq</code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -aq</span></code></pre></div>
 <h1 id="sq-example-scenarios"><code>sq</code> Example Scenarios</h1>
 <ul>
 <li>The job would intersect with downtime so the job will run <em>after</em> the downtime</li>
-<li>Condo users have a fixed number of nodes with their condo QoS</li>
+<li>Condo users have a fixed number of nodes with their condo QoS
+<ul>
 <li>Try using <code>savio_lowprio</code> QoS</li>
+</ul></li>
 <li>Job is requesting longer wall-clock time than is allowed (<code>QOSMaxWallDurationPerJobLimit</code>)</li>
 </ul>
 <h1 id="sq-demo"><code>sq</code> Demo</h1>
 <p>Demo QOSGrp</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sq</span> -u <span class="st">&quot;</span><span class="va">$(</span><span class="ex">squeue</span> -o %all -P <span class="kw">|</span> <span class="fu">grep</span> -i qosgrp <span class="kw">|</span> <span class="fu">cut</span> -d<span class="st">&#39;|&#39;</span> -f21 <span class="kw">|</span> <span class="ex">shuf</span> <span class="kw">|</span> <span class="fu">head</span> -n1<span class="va">)</span><span class="st">&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -u <span class="st">&quot;</span><span class="va">$(</span><span class="ex">squeue</span> -o %all -P <span class="kw">|</span> <span class="fu">grep</span> -i qosgrp <span class="kw">|</span> <span class="fu">cut</span> -d<span class="st">&#39;|&#39;</span> -f21 <span class="kw">|</span> <span class="ex">shuf</span> <span class="kw">|</span> <span class="fu">head</span> -n1<span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
 <h1 id="squeue"><code>squeue</code></h1>
 <ul>
-<li>If you need more specific information, you can use Slurm's own <code>squeue</code>.</li>
+<li>If you need more specific information, you can use Slurm’s own <code>squeue</code>.
+<ul>
 <li><code>REASON</code> are explained in <code>man squeue</code></li>
+</ul></li>
 </ul>
 <h1 id="common-reason">Common <code>REASON</code></h1>
 <ul>
@@ -455,20 +810,22 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 </ul>
 <h1 id="when-is-my-job-expected-to-start-pending">When is my job expected to start? (PENDING)</h1>
 <p>Check how many other pending jobs there are in the queue:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">squeue</span> -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY</code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY</span></code></pre></div>
 <p>Higher priority means it will try to run sooner.</p>
 <h1 id="when-is-my-job-expected-to-start-resources">When is my job expected to start? (RESOURCES)</h1>
 <p>If status is <code>RESOURCES</code>, you may check:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">squeue</span> --start -u <span class="va">$USER</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> --start -u <span class="va">$USER</span></span></code></pre></div>
 <p>to get an <em>estimated</em> start time.</p>
 <h1 id="how-can-i-get-my-job-to-start-sooner">How can I get my job to start sooner?</h1>
 <ul>
 <li>Shorten the time limit. Slurm may be able to fit a shorter job in a small gap between other jobs.</li>
 <li>Request fewer nodes (or cores on partitions scheduled by cores). Perhaps there are a few nodes available right now but you would have to wait for other jobs to release other nodes if you wanted more.</li>
 <li>Choose condo QoS if possible for higher priority.</li>
-<li>Choose a partition with more idle nodes</li>
+<li>Choose a partition with more idle nodes
+<ul>
 <li><code>sinfo -o %P,%A</code> (Partition, Allocated/Idle)</li>
 <li>View on our <a href="https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2">Savio status dashboard</a></li>
+</ul></li>
 <li>High recent usage decreases FCA priority.</li>
 </ul>
 </body>

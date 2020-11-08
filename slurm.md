@@ -442,6 +442,170 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 
 However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.  
 
+# How Slurm works on Savio (Wei)
+- Introduction to queueing on clusters
+- Slurm details
+- How Slurm is set up on Savio
+
+# Slurm Overview
+- An open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters
+- Manage job submission and scheduling on Savio
+- Control user access to the resources on Savio, different partitions, project account...
+- Manages the queue of pending jobs based on assigning priorities to jobs
+- Optimize how jobs with different resource requirements can be accommodated 
+
+# Slurm architecture
+![Slurm](/Users/wfeinstein/Desktop/LBL-notes/arch.gif)
+
+# Slurmdbd - database daemon
+- A mysql database daemon runs on the master node
+- Tracks all user account information
+- Tracks all job information
+- Tracks all configuration information 
+- Partitions, qos, nodename and resources, all transactions, clustername
+- Commands used for this database: sacctmgr 
+
+# Slurmd - Node management daemon 
+- Runs on all the compute nodes
+- Tracks state of a node (controls if down, up, idle, alloc)
+- Tracks resources available on a node
+- Tracks jobs running on the node
+- Launch and kill jobs
+
+# Slurmctld - control daemon runs on service node
+- Communicates to the SlurmBD for accounting information
+- Communicates to the SlurmD for state of the nodes information
+  - What resources are available
+  - What state the node is in (idle, allocated, drained, down)
+  - What job should be scheduled to run on what node and semi-reserve that node for the job
+- Reads config files to determine how to configure Slurm, such as slurm.conf, gres.conf...
+- Communicates and understands Slurm-plugins
+  - spank_private_tmpshm
+  - spank_collect_script
+  - job_submit_collect_script
+  - spank_slurm_banking
+- Slurm Authentication program - Munge 
+- User commands: sacct, squeue, sinfo, sbatch, etc
+
+# Job submission process
+- srun, sbatch, salloc 
+- Job validation processes
+- Prolog - setups environment variables - $TMPDIR
+- Requested resources checked
+- Job batched to slurmd node
+- Job killed upon completion - epilog script ran to clean up processes
+
+# Job priority factors
+- Fairshare: usage and raw share
+- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
+- Partition: same for all Savio partitions
+- Agei: longer your job wait in a queue, higher priority your job get 
+- JobSize 
+
+# Fairshare on Savio
+- Savio uses Slurm's Fairshare system to prioritize amongst jobs in the queue.
+- Fairshare assigns a numerical priority score to each job based on its characteristics. 
+- Usage: 
+  - a value between 0.0 and 1.0 that represents your proportional usage of the system
+  - quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.
+  - prioritizing groups and users who have not used Savio much recently over those who have
+- Raw Shares: are assigned to each association by an admin 
+  - “Shares” is Raw Shares when normalized to 0.0 
+  - 1.0 Similar to slices of a pie
+  - represent the part of the system that is “yours” 
+-  Check fairshare scores
+```
+   sshare -la |head -1 ; sshare -al |grep user_name
+   sshare -la |head -1 ; sshare -al |grep project_name
+```
+# Quality of Service (QOS)
+- The quality of service can be configured in various ways:
+  - Max node count
+  - Max walltime
+  - Job Scheduling Priority
+  - Job Preemption
+  - Job Limits
+
+```
+[root@master ~]# sacctmgr show qos -p  format="Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt"
+Name|MaxTRES|MaxWall|MaxTRESPU|MaxJobs|MaxSubmit|Priority|Preempt|
+normal||||||1000||
+savio_debug|node=4|00:30:00||||10000|savio_lowprio|
+savio_normal|node=24|3-00:00:00||||1000|savio_lowprio|
+savio_lowprio|node=24|3-00:00:00||||0||
+astro_normal|node=16|||||1000000|savio_lowprio|
+astro_debug|node=4|00:30:00||||10000000|savio_lowprio|
+aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
+...
+```
+```
+[root@master ~]# sacctmgr show qos -p|grep astro
+astro_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
+astro_debug|10000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
+astro_savio_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
+astro_savio_debug|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
+```
+# Savio Partitions (queues)
+
+```
+[root@master ~]# grep -i partition /etc/slurm/slurm.conf
+PriorityWeightPartition=0
+PartitionName=savio           Nodes=n0[004-095,100-167].savio[1] 	         Oversubscribe=Exclusive DefMemPerNode=64000
+PartitionName=savio_bigmem    Nodes=n0[096-099].savio[1]         	         Oversubscribe=Exclusive DefMemPerNode=512000
+PartitionName=savio2          Nodes=n0[027-150,187-210,230-240,290-293].savio[2] Oversubscribe=Exclusive DefMemPerNode=63500
+PartitionName=savio2_htc      Nodes=n0[000-011,215-222].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=10600      LLN=Yes
+PartitionName=savio2_gpu      Nodes=n0[012-026,223-224].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=8000
+PartitionName=savio2_bigmem   Nodes=n0[151-186,282-289].savio[2]                 Oversubscribe=Exclusive DefMemPerNode=128000
+PartitionName=savio2_1080ti   Nodes=n0[227-229,298-302].savio[2]                 Oversubscribe=Yes       DefMemPerCPU=8000
+PartitionName=savio2_knl      Nodes=n0[254-281,294-297].savio[2]                 Oversubscribe=Exclusive DefMemPerNode=190000
+PartitionName=savio3_bigmem   Nodes=n0[006-009,030-041,166-169].savio[3]         Oversubscribe=Exclusive DefMemPerNode=360000  # 384 GB
+PartitionName=savio3_xlmem    Nodes=n0[000-001].savio[3]                         Oversubscribe=Exclusive DefMemPerNode=1500000 #  1.5 TB
+PartitionName=savio3_gpu      Nodes=n000[4-5].savio[3]                           Oversubscribe=Yes       DefMemPerCPU=8000     #  64 GB total / 8 cores
+PartitionName=savio3_2080ti   Nodes=n0[134-138,143-145,158-161,174-176].savio[3] Oversubscribe=Yes       DefMemPerCPU=12000
+# partitionName can only be defined once for any given name, so 4rtx and 8rtx cannot have separate def for DefMemPerCPU
+PartitionName=savio3          Nodes=n0[010-029,042-125,126-133,139-142,146-149,150-157,170-173].savio[3] Oversubscribe=Exclusive DefMemPerNode=92000 
+PartitionName=cortex          Nodes=n0[000-013].cortex[0]                        Oversubscribe=Yes       DefMemPerCPU=2000
+PartitionName=vector          Nodes=n0[000-011].vector[0]                        Oversubscribe=Yes       DefMemPerCPU=4000
+PartitionName=testbed         Nodes=n0[000-003].testbed[0]                       Oversubscribe=Exclusive DefMemPerNode=2000
+
+```
+
+# Backfill
+![](/Users/wfeinstein/Desktop/LBL-notes/backfill.png){ width=60% }
+
+- Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:
+  - Each job submission
+  - Job completion on its allocated nodes
+  - At configuration changes
+- Slurm parameters are configured to ensure backfill works: bf_window, bf_continue, bf_resolution
+- Backfill start lower priority jobs if by doing so does not delay the expected start time of any higher priority jobs
+- **Note**: accurate and reasonable run times is required for backfill to start lower priority jobs
+
+ 
+# How priorities and queueing on Savio work (1)
+- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
+- Condo usage
+  - Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time. 
+  - Additional jobs will be queued until usage drops below that limit. 
+  - The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.
+  - Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
+    - Because the partition is fully used, across all condo and FCA users of the given partition. 
+    - This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage. 
+    - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
+    - Usually any lag in starting condo jobs under this circumstance is limited.
+
+# How priorities and queueing on Savio work (2)
+- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
+- FCA jobs 
+  - Start when they reach the top of the queue and resources become available as running jobs finish. 
+  - The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm. 
+  - The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job. 
+  - Jobs from multiple users within an FCA are then influenced by their individual recent usage.
+  - In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs, 
+    - Priority for a given job depends inversely on that recent usage (based on the FCA the job is using). 
+    - Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.
+
+
 # Common Queue Questions (Nicolas)
 - Why isn't my job running (yet)?
 - When is my job expected to start?
