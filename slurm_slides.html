@@ -511,7 +511,7 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 <li>An open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters</li>
 <li>Manage job submission and scheduling on Savio</li>
 <li>Control user access to the resources on Savio, different partitions, project account…</li>
-<li>Manages the queue of pending jobs based on assigning priorities to jobs</li>
+<li>Manage the queue of pending jobs based on assigning priorities to jobs</li>
 <li>Optimize how jobs with different resource requirements can be accommodated</li>
 </ul>
 </div>
@@ -526,98 +526,97 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 <h1>Slurmdbd - database daemon</h1>
 <ul>
 <li>A mysql database daemon runs on the master node</li>
-<li>Tracks all user account information</li>
-<li>Tracks all job information</li>
-<li>Tracks all configuration information</li>
-<li>Partitions, qos, nodename and resources, all transactions, clustername</li>
+<li>Track all user account information</li>
+<li>Track all job information</li>
+<li>Track all configuration information
+<ul>
+<li>partitions, qos, nodename and resources, all transactions…</li>
+</ul></li>
 <li>Commands used for this database: sacctmgr</li>
 </ul>
 </div>
 <div id="slurmd---node-management-daemon" class="slide section level1">
 <h1>Slurmd - Node management daemon</h1>
 <ul>
-<li>Runs on all the compute nodes</li>
-<li>Tracks state of a node (controls if down, up, idle, alloc)</li>
-<li>Tracks resources available on a node</li>
-<li>Tracks jobs running on the node</li>
-<li>Launch and kill jobs</li>
+<li>Run on all the compute nodes</li>
+<li>Track state of a node: down, up, idle, alloc</li>
+<li>Track resources available on a node</li>
+<li>Track jobs running on a node</li>
+<li>Launch and kill jobs on a node</li>
 </ul>
 </div>
 <div id="slurmctld---control-daemon-runs-on-service-node" class="slide section level1">
 <h1>Slurmctld - control daemon runs on service node</h1>
 <ul>
-<li>Communicates to the SlurmBD for accounting information</li>
-<li>Communicates to the SlurmD for state of the nodes information
+<li>Communicate to SlurmBD for accounting information</li>
+<li>Communicate to SlurmD for state of the nodes
 <ul>
-<li>What resources are available</li>
-<li>What state the node is in (idle, allocated, drained, down)</li>
+<li>Available resources, state of nodes</li>
 <li>What job should be scheduled to run on what node and semi-reserve that node for the job</li>
 </ul></li>
-<li>Reads config files to determine how to configure Slurm, such as slurm.conf, gres.conf…</li>
-<li>Communicates and understands Slurm-plugins
+<li>Read config files to determine how to configure Slurm, such as slurm.conf, gres.conf…</li>
+<li>Communicate and understand Slurm-plugins
 <ul>
 <li>spank_private_tmpshm</li>
 <li>spank_collect_script</li>
 <li>job_submit_collect_script</li>
 <li>spank_slurm_banking</li>
 </ul></li>
-<li>Slurm Authentication program - Munge</li>
+<li>Slurm Authentication: Munge</li>
 <li>User commands: sacct, squeue, sinfo, sbatch, etc</li>
 </ul>
 </div>
 <div id="job-submission-process" class="slide section level1">
 <h1>Job submission process</h1>
 <ul>
-<li>srun, sbatch, salloc</li>
-<li>Job validation processes</li>
+<li>Submit jobs: srun, sbatch, salloc</li>
+<li>Job parameters validated</li>
 <li>Prolog - setups environment variables - $TMPDIR</li>
 <li>Requested resources checked</li>
 <li>Job batched to slurmd node</li>
 <li>Job killed upon completion - epilog script ran to clean up processes</li>
 </ul>
 </div>
-<div id="job-priority-factors" class="slide section level1">
-<h1>Job priority factors</h1>
+<div id="job-prioritization-factors" class="slide section level1">
+<h1>Job prioritization factors</h1>
 <ul>
+<li>Priority Plugins define Slurm’s behavior, Priority/multifactor - Sets priority based on:</li>
+<li>QOS: set to prioritize condo users first (1000000), debug (10000), normal (1000) and low_prio (0)</li>
 <li>Fairshare: usage and raw share</li>
-<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
+<li>Job age: the length of time a job has been waiting in the queue. max’s out at 1.0. The default is 7 days,</li>
 <li>Partition: same for all Savio partitions</li>
-<li>Agei: longer your job wait in a queue, higher priority your job get</li>
-<li>JobSize</li>
+<li>Prioroity = FAIRSHARE + QOS + AGE</li>
+<li><em>sprio</em>: report components of job priority</li>
 </ul>
-</div>
-<div id="fairshare-on-savio" class="slide section level1">
-<h1>Fairshare on Savio</h1>
-<ul>
-<li>Savio uses Slurm’s Fairshare system to prioritize amongst jobs in the queue.</li>
-<li>Fairshare assigns a numerical priority score to each job based on its characteristics.</li>
-<li>Usage:
-<ul>
-<li>a value between 0.0 and 1.0 that represents your proportional usage of the system</li>
-<li>quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.</li>
-<li>prioritizing groups and users who have not used Savio much recently over those who have</li>
-</ul></li>
-<li>Raw Shares: are assigned to each association by an admin
-<ul>
-<li>“Shares” is Raw Shares when normalized to 0.0</li>
-<li>1.0 Similar to slices of a pie</li>
-<li>represent the part of the system that is “yours”</li>
-</ul></li>
-<li>Check fairshare scores</li>
-</ul>
-<pre><code>   sshare -la |head -1 ; sshare -al |grep user_name
-   sshare -la |head -1 ; sshare -al |grep project_name</code></pre>
+<pre><code>[root@master ~]# sprio -w
+          JOBID PARTITION   PRIORITY        AGE  FAIRSHARE        QOS
+        Weights                            1000    1000000   10000000</code></pre>
+<pre><code>[root@master ~]# sprio 
+          JOBID PARTITION   PRIORITY        AGE  FAIRSHARE        QOS
+        6318009 savio2        186567       1000     184567       1000
+        6673582 savio2_ht    1002000       1000    1000000       1000
+        6746622 savio        1002000       1000    1000000       1000
+        7109486 savio2_kn    1002070       1000       1071    1000000
+        7121580 savio2_bi      31447       1000      30448          0
+        7121581 savio2_bi      31447       1000      30448          0
+        7129566 savio2_kn    1002070       1000       1071    1000000
+        7140264 savio3       1017816       1000      16817    1000000
+        7140767 savio2_kn    1002122       1000       1123    1000000
+        7140988 savio3           516        491         26          0
+        7141006 savio2_kn    1001416        319       1097    1000000
+</code></pre>
 </div>
 <div id="quality-of-service-qos" class="slide section level1">
-<h1>Quality of Service (QOS)</h1>
+<h1>Quality of Service (QoS)</h1>
 <ul>
-<li>The quality of service can be configured in various ways:
+<li>Used to set resource limits at group, job, user levels:
 <ul>
 <li>Max node count</li>
+<li>Max CPU</li>
+<li>Max user submission</li>
 <li>Max walltime</li>
 <li>Job Scheduling Priority</li>
 <li>Job Preemption</li>
-<li>Job Limits</li>
 </ul></li>
 </ul>
 <pre><code>[root@master ~]# sacctmgr show qos -p  format=&quot;Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt&quot;
@@ -630,11 +629,27 @@ astro_normal|node=16|||||1000000|savio_lowprio|
 astro_debug|node=4|00:30:00||||10000000|savio_lowprio|
 aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
 ...</code></pre>
-<pre><code>[root@master ~]# sacctmgr show qos -p|grep astro
-astro_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
-astro_debug|10000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
-astro_savio_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
-astro_savio_debug|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|</code></pre>
+</div>
+<div id="fairshare-on-savio" class="slide section level1">
+<h1>Fairshare on Savio</h1>
+<ul>
+<li>Savio use Slurm’s Fairshare system to prioritize amongst jobs in the queue.</li>
+<li>Fairshare assign a numerical priority score to each job based on assigned shares and the effective usage.</li>
+<li>Usage:
+<ul>
+<li>a value between 0.0 and 1.0 that represents your proportional usage of the system</li>
+<li>quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.</li>
+<li>prioritizing groups and users who have not used Savio much recently over those who have</li>
+</ul></li>
+<li>Raw Shares: assigned to each account/project by default
+<ul>
+<li>1.0 Similar to slices of a pie</li>
+<li>represent the part of the system that is “yours”</li>
+</ul></li>
+<li>Check fairshare scores</li>
+</ul>
+<pre><code>   sshare -la |head -1 ; sshare -al |grep user_name
+   sshare -la |head -1 ; sshare -al |grep project_name</code></pre>
 </div>
 <div id="savio-partitions-queues" class="slide section level1">
 <h1>Savio Partitions (queues)</h1>
@@ -674,10 +689,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <li><strong>Note</strong>: accurate and reasonable run times is required for backfill to start lower priority jobs</li>
 </ul>
 </div>
-<div id="how-priorities-and-queueing-on-savio-work-1" class="slide section level1">
-<h1>How priorities and queueing on Savio work (1)</h1>
+<div id="how-priorities-and-queuing-on-savio-work-1" class="slide section level1">
+<h1>How priorities and queuing on Savio work (1)</h1>
 <ul>
-<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
+<li>Two primary ways to run jobs on Savio: under a faculty computing allowance (FCA) and under a condo.</li>
 <li>Condo usage
 <ul>
 <li>Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time.</li>
@@ -693,14 +708,13 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 </ul></li>
 </ul>
 </div>
-<div id="how-priorities-and-queueing-on-savio-work-2" class="slide section level1">
-<h1>How priorities and queueing on Savio work (2)</h1>
+<div id="how-priorities-and-queuing-on-savio-work-2" class="slide section level1">
+<h1>How priorities and queuing on Savio work (2)</h1>
 <ul>
-<li>Savio has two main ways to run jobs – under a faculty computing allowance (FCA) and under a condo.</li>
 <li>FCA jobs
 <ul>
 <li>Start when they reach the top of the queue and resources become available as running jobs finish.</li>
-<li>The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm.</li>
+<li>The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm).</li>
 <li>The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job.</li>
 <li>Jobs from multiple users within an FCA are then influenced by their individual recent usage.</li>
 <li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,
@@ -731,10 +745,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <div id="introducing-sq" class="slide section level1">
 <h1>Introducing <code>sq</code></h1>
 <p>We developed a new tool to diagnose issues:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load sq</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load sq</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span></span></code></pre></div>
 <p>You can also use it as an <code>squeue</code> replacement:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -aq</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -aq</span></code></pre></div>
 </div>
 <div id="sq-example-scenarios" class="slide section level1">
 <h1><code>sq</code> Example Scenarios</h1>
@@ -750,7 +764,7 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <div id="sq-demo" class="slide section level1">
 <h1><code>sq</code> Demo</h1>
 <p>Demo QOSGrp</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -u <span class="st">&quot;</span><span class="va">$(</span><span class="ex">squeue</span> -o %all -P <span class="kw">|</span> <span class="fu">grep</span> -i qosgrp <span class="kw">|</span> <span class="fu">cut</span> -d<span class="st">&#39;|&#39;</span> -f21 <span class="kw">|</span> <span class="ex">shuf</span> <span class="kw">|</span> <span class="fu">head</span> -n1<span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sq</span> -u <span class="st">&quot;</span><span class="va">$(</span><span class="ex">squeue</span> -o %all -P <span class="kw">|</span> <span class="fu">grep</span> -i qosgrp <span class="kw">|</span> <span class="fu">cut</span> -d<span class="st">&#39;|&#39;</span> -f21 <span class="kw">|</span> <span class="ex">shuf</span> <span class="kw">|</span> <span class="fu">head</span> -n1<span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
 </div>
 <div id="squeue" class="slide section level1">
 <h1><code>squeue</code></h1>
@@ -771,13 +785,13 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <div id="when-is-my-job-expected-to-start-pending" class="slide section level1">
 <h1>When is my job expected to start? (PENDING)</h1>
 <p>Check how many other pending jobs there are in the queue:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> -p savio2 --state=PD -l -O JOBID,PARTITION,NAME,USERNAME,STATE,TIMELIMIT,REASON,PRIORITY</span></code></pre></div>
 <p>Higher priority means it will try to run sooner.</p>
 </div>
 <div id="when-is-my-job-expected-to-start-resources" class="slide section level1">
 <h1>When is my job expected to start? (RESOURCES)</h1>
 <p>If status is <code>RESOURCES</code>, you may check:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> --start -u <span class="va">$USER</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> --start -u <span class="va">$USER</span></span></code></pre></div>
 <p>to get an <em>estimated</em> start time.</p>
 </div>
 <div id="how-can-i-get-my-job-to-start-sooner" class="slide section level1">

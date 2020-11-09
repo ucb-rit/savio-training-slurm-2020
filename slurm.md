@@ -451,7 +451,7 @@ However, in most cases, even if you provide invalid values, your job will be que
 - An open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters
 - Manage job submission and scheduling on Savio
 - Control user access to the resources on Savio, different partitions, project account...
-- Manages the queue of pending jobs based on assigning priorities to jobs
+- Manage the queue of pending jobs based on assigning priorities to jobs
 - Optimize how jobs with different resource requirements can be accommodated 
 
 # Slurm architecture
@@ -459,72 +459,81 @@ However, in most cases, even if you provide invalid values, your job will be que
 
 # Slurmdbd - database daemon
 - A mysql database daemon runs on the master node
-- Tracks all user account information
-- Tracks all job information
-- Tracks all configuration information 
-- Partitions, qos, nodename and resources, all transactions, clustername
+- Track all user account information
+- Track all job information
+- Track all configuration information 
+   - partitions, qos, nodename and resources, all transactions...
 - Commands used for this database: sacctmgr 
 
 # Slurmd - Node management daemon 
-- Runs on all the compute nodes
-- Tracks state of a node (controls if down, up, idle, alloc)
-- Tracks resources available on a node
-- Tracks jobs running on the node
-- Launch and kill jobs
+- Run on all the compute nodes
+- Track state of a node: down, up, idle, alloc
+- Track resources available on a node
+- Track jobs running on a node
+- Launch and kill jobs on a node
 
 # Slurmctld - control daemon runs on service node
-- Communicates to the SlurmBD for accounting information
-- Communicates to the SlurmD for state of the nodes information
-  - What resources are available
-  - What state the node is in (idle, allocated, drained, down)
+- Communicate to SlurmBD for accounting information
+- Communicate to SlurmD for state of the nodes
+  - Available resources, state of nodes
   - What job should be scheduled to run on what node and semi-reserve that node for the job
-- Reads config files to determine how to configure Slurm, such as slurm.conf, gres.conf...
-- Communicates and understands Slurm-plugins
+- Read config files to determine how to configure Slurm, such as slurm.conf, gres.conf...
+- Communicate and understand Slurm-plugins
   - spank_private_tmpshm
   - spank_collect_script
   - job_submit_collect_script
   - spank_slurm_banking
-- Slurm Authentication program - Munge 
+- Slurm Authentication: Munge 
 - User commands: sacct, squeue, sinfo, sbatch, etc
 
 # Job submission process
-- srun, sbatch, salloc 
-- Job validation processes
+- Submit jobs: srun, sbatch, salloc 
+- Job parameters validated 
 - Prolog - setups environment variables - $TMPDIR
 - Requested resources checked
 - Job batched to slurmd node
 - Job killed upon completion - epilog script ran to clean up processes
 
-# Job priority factors
-- Fairshare: usage and raw share
-- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
-- Partition: same for all Savio partitions
-- Agei: longer your job wait in a queue, higher priority your job get 
-- JobSize 
+# Job prioritization factors
 
-# Fairshare on Savio
-- Savio uses Slurm's Fairshare system to prioritize amongst jobs in the queue.
-- Fairshare assigns a numerical priority score to each job based on its characteristics. 
-- Usage: 
-  - a value between 0.0 and 1.0 that represents your proportional usage of the system
-  - quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.
-  - prioritizing groups and users who have not used Savio much recently over those who have
-- Raw Shares: are assigned to each association by an admin 
-  - “Shares” is Raw Shares when normalized to 0.0 
-  - 1.0 Similar to slices of a pie
-  - represent the part of the system that is “yours” 
--  Check fairshare scores
+- Priority Plugins define Slurm’s behavior, Priority/multifactor - Sets priority based on:
+- QOS: set to prioritize condo users first (1000000), debug (10000), normal (1000) and low_prio (0)
+- Fairshare: usage and raw share
+- Job age: the length of time a job has been waiting in the queue. max’s out at 1.0. The default is 7 days,
+- Partition: same for all Savio partitions
+- Prioroity = FAIRSHARE + QOS  + AGE 
+- *sprio*: report components of job priority 
+
 ```
-   sshare -la |head -1 ; sshare -al |grep user_name
-   sshare -la |head -1 ; sshare -al |grep project_name
+[root@master ~]# sprio -w
+          JOBID PARTITION   PRIORITY        AGE  FAIRSHARE        QOS
+        Weights                            1000    1000000   10000000
 ```
-# Quality of Service (QOS)
-- The quality of service can be configured in various ways:
+```
+[root@master ~]# sprio 
+          JOBID PARTITION   PRIORITY        AGE  FAIRSHARE        QOS
+        6318009 savio2        186567       1000     184567       1000
+        6673582 savio2_ht    1002000       1000    1000000       1000
+        6746622 savio        1002000       1000    1000000       1000
+        7109486 savio2_kn    1002070       1000       1071    1000000
+        7121580 savio2_bi      31447       1000      30448          0
+        7121581 savio2_bi      31447       1000      30448          0
+        7129566 savio2_kn    1002070       1000       1071    1000000
+        7140264 savio3       1017816       1000      16817    1000000
+        7140767 savio2_kn    1002122       1000       1123    1000000
+        7140988 savio3           516        491         26          0
+        7141006 savio2_kn    1001416        319       1097    1000000
+
+```
+
+# Quality of Service (QoS)
+- Used to set resource limits at group, job, user levels:
   - Max node count
+  - Max CPU
+  - Max user submission
   - Max walltime
-  - Job Scheduling Priority
+  - Job Scheduling Priority 
   - Job Preemption
-  - Job Limits
 
 ```
 [root@master ~]# sacctmgr show qos -p  format="Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt"
@@ -538,13 +547,24 @@ astro_debug|node=4|00:30:00||||10000000|savio_lowprio|
 aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
 ...
 ```
+
+# Fairshare on Savio
+- Savio use Slurm's Fairshare system to prioritize amongst jobs in the queue.
+- Fairshare assign a numerical priority score to each job based on assigned shares and the effective usage. 
+- Usage: 
+  - a value between 0.0 and 1.0 that represents your proportional usage of the system
+  - quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.
+  - prioritizing groups and users who have not used Savio much recently over those who have
+- Raw Shares: assigned to each account/project by default 
+  - 1.0 Similar to slices of a pie
+  - represent the part of the system that is “yours” 
+-  Check fairshare scores
+
 ```
-[root@master ~]# sacctmgr show qos -p|grep astro
-astro_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
-astro_debug|10000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
-astro_savio_normal|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=32||||||node=16||||||||||cpu=1|
-astro_savio_debug|1000000|00:00:00|savio_lowprio|cluster|||1.000000|node=4||||||node=4|||00:30:00|||||||cpu=1|
+   sshare -la |head -1 ; sshare -al |grep user_name
+   sshare -la |head -1 ; sshare -al |grep project_name
 ```
+
 # Savio Partitions (queues)
 
 ```
@@ -582,8 +602,8 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 - **Note**: accurate and reasonable run times is required for backfill to start lower priority jobs
 
  
-# How priorities and queueing on Savio work (1)
-- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
+# How priorities and queuing on Savio work (1)
+- Two primary ways to run jobs on Savio: under a faculty computing allowance (FCA) and under a condo.
 - Condo usage
   - Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time. 
   - Additional jobs will be queued until usage drops below that limit. 
@@ -594,11 +614,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
     - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
     - Usually any lag in starting condo jobs under this circumstance is limited.
 
-# How priorities and queueing on Savio work (2)
-- Savio has two main ways to run jobs -- under a faculty computing allowance (FCA) and under a condo.
+# How priorities and queuing on Savio work (2)
 - FCA jobs 
   - Start when they reach the top of the queue and resources become available as running jobs finish. 
-  - The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm. 
+  - The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm). 
   - The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job. 
   - Jobs from multiple users within an FCA are then influenced by their individual recent usage.
   - In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs, 
