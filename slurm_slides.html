@@ -583,13 +583,15 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 <div id="quality-of-service-qos" class="slide section level1">
 <h1>Quality of Service (QoS)</h1>
 <ul>
-<li>Used to set resource limits at group, job, user levels:</li>
+<li>Used to set resource limits at group, job, user levels:
+<ul>
 <li>Max node count</li>
 <li>Max CPU</li>
 <li>Max user submission</li>
 <li>Max walltime</li>
 <li>Job Scheduling Priority</li>
 <li>Job Preemption</li>
+</ul></li>
 </ul>
 <pre><code>[root@master ~]# sacctmgr show qos -p  format=&quot;Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt&quot;
 Name|MaxTRES|MaxWall|MaxTRESPU|MaxJobs|MaxSubmit|Priority|Preempt|
@@ -690,9 +692,11 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <li>The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm).</li>
 <li>The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job.</li>
 <li>Jobs from multiple users within an FCA are then influenced by their individual recent usage.</li>
-<li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,</li>
+<li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,
+<ul>
 <li>Priority for a given job depends inversely on that recent usage (based on the FCA the job is using).</li>
 <li>Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.</li>
+</ul></li>
 </ul></li>
 </ul>
 </div>
@@ -725,8 +729,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <h1><code>sq</code> Example Scenarios</h1>
 <ul>
 <li>The job would intersect with downtime so the job will run <em>after</em> the downtime</li>
-<li>Condo users have a fixed number of nodes with their condo QoS</li>
+<li>Condo users have a fixed number of nodes with their condo QoS
+<ul>
 <li>Try using <code>savio_lowprio</code> QoS</li>
+</ul></li>
 <li>Job is requesting longer wall-clock time than is allowed (<code>QOSMaxWallDurationPerJobLimit</code>)</li>
 </ul>
 </div>
@@ -738,8 +744,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <div id="squeue" class="slide section level1">
 <h1><code>squeue</code></h1>
 <ul>
-<li>If you need more specific information, you can use Slurm's own <code>squeue</code>.</li>
+<li>If you need more specific information, you can use Slurm's own <code>squeue</code>.
+<ul>
 <li><code>REASON</code> are explained in <code>man squeue</code></li>
+</ul></li>
 </ul>
 </div>
 <div id="common-reason" class="slide section level1">
@@ -767,9 +775,11 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <li>Shorten the time limit. Slurm may be able to fit a shorter job in a small gap between other jobs.</li>
 <li>Request fewer nodes (or cores on partitions scheduled by cores). Perhaps there are a few nodes available right now but you would have to wait for other jobs to release other nodes if you wanted more.</li>
 <li>Choose condo QoS if possible for higher priority.</li>
-<li>Choose a partition with more idle nodes</li>
+<li>Choose a partition with more idle nodes
+<ul>
 <li><code>sinfo -o %P,%A</code> (Partition, Allocated/Idle)</li>
 <li>View on our <a href="https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2">Savio status dashboard</a></li>
+</ul></li>
 <li>High recent usage decreases FCA priority.</li>
 </ul>
 </div>
