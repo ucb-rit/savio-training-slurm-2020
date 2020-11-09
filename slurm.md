@@ -78,6 +78,7 @@ Savio uses Slurm to:
  2) Start and monitor jobs on allocated resources
  3) Manage the queue of pending jobs
 
+We've recently updated our documentation to give more details about Slurm and how to troubleshoot your jobs. Please [start here](https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/)
 
 # Submitting jobs: accounts and partitions
 
