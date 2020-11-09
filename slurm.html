@@ -133,12 +133,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>Start and monitor jobs on allocated resources</li>
 <li>Manage the queue of pending jobs</li>
 </ol>
-<p>We've recently updated our documentation to give more details about Slurm and how to troubleshoot your jobs. Please <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/">start here</a></p>
+<p>We've recently updated our documentation to give more details about Slurm and how to troubleshoot your jobs. Please <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/running-your-jobs/">start here</a>.</p>
 <h1 id="submitting-jobs-accounts-and-partitions">Submitting jobs: accounts and partitions</h1>
-<p>When submitting a job, the main things you need to indicate are the project account you are using and the partition. Note that their is a default value for the project account, but if you have access to multiple accounts such as an FCA and a condo, it's good practice to specify it.</p>
+<p>When submitting a job, the main things you need to indicate are the project account you are using and the partition. Note that there is a default value for the project account, but if you have access to multiple accounts such as an FCA and a condo, it's good practice to specify it.</p>
 <p>You can see what accounts you have access to and which partitions within those accounts as follows:</p>
 <pre><code>sacctmgr -p show associations user=SAVIO_USERNAME</code></pre>
-<p>Here's an example of the output for a user who has access to an FCA, a condo, and a special partner account:</p>
+<p>Here's an example of the output for a user who has access to an FCA and a condo.</p>
 <pre><code>Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 brc|co_stat|paciorek|savio2_1080ti|1||||||||||||savio_lowprio|savio_lowprio||
 brc|co_stat|paciorek|savio2_knl|1||||||||||||savio_lowprio|savio_lowprio||
@@ -156,7 +156,7 @@ brc|fc_paciorek|paciorek|savio2_bigmem|1||||||||||||savio_debug,savio_normal|sav
 brc|fc_paciorek|paciorek|savio2|1||||||||||||savio_debug,savio_normal|savio_normal||
 brc|fc_paciorek|paciorek|savio|1||||||||||||savio_debug,savio_normal|savio_normal||
 brc|fc_paciorek|paciorek|savio_bigmem|1||||||||||||savio_debug,savio_normal|savio_normal||</code></pre>
-<p>If you are part of a condo, you'll notice that you have <em>low-priority</em> access to certain partitions. For example I am part of the statistics condo <em>co_stat</em>, which owns some savio2 nodes and savio2_gpu nodes and therefore I have normal access to those, but I can also burst beyond the condo and use other partitions at low-priority (see below).</p>
+<p>If you are part of a condo, you'll notice that you have <em>low-priority</em> access to certain partitions. For example I am part of the statistics condo <em>co_stat</em>, which owns some 'savio2' nodes and 'savio2_gpu' nodes and therefore I have normal access to those, but I can also burst beyond the condo and use other partitions at low-priority (see below).</p>
 <p>In contrast, through my FCA, I have access to the savio, savio2, big memory, HTC, and GPU partitions all at normal priority.</p>
 <h1 id="submitting-a-batch-job">Submitting a batch job</h1>
 <p>Let's see how to submit a simple job. If your job will only use the resources on a single node, you can do the following.</p>
@@ -171,8 +171,8 @@ brc|fc_paciorek|paciorek|savio_bigmem|1||||||||||||savio_debug,savio_normal|savi
 <span class="co"># Partition:</span>
 <span class="co">#SBATCH --partition=savio2</span>
 <span class="co">#</span>
-<span class="co"># Wall clock limit (30 seconds here):</span>
-<span class="co">#SBATCH --time=00:00:30</span>
+<span class="co"># Wall clock limit (45 seconds here):</span>
+<span class="co">#SBATCH --time=00:00:45</span>
 <span class="co">#</span>
 <span class="co">## Command(s) to run:</span>
 <span class="ex">module</span> load python/3.6
@@ -344,19 +344,21 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 <h1 id="low-priority-queue">Low-priority queue</h1>
 <p>Condo users have access to the broader compute resource that is limited only by the size of partitions, under the <em>savio_lowprio</em> QoS (queue). However this QoS does not get a priority as high as the general QoSs, such as <em>savio_normal</em> and <em>savio_debug</em>, or all the condo QoSs, and it is subject to preemption when all the other QoSs become busy.</p>
 <p>More details can be found <a href="https://research-it.berkeley.edu/services/high-performance-computing/user-guide/savio-user-guide#Low_Priority">in the <em>Low Priority Jobs</em> section of the user guide</a>.</p>
-<p>Suppose I wanted to burst beyond my condo to run on 20 nodes. I'll illustrate here with an interactive job though usually this would be for a batch job.</p>
-<p>First I'll see if there are that many nodes even available.</p>
+<p>Suppose I wanted to burst beyond my condo to run on 20 nodes.</p>
+<p>First I'll see if there are that many nodes even available on the partition of interest.</p>
+<pre><code>sinfo -p savio</code></pre>
+<p>Here's the submission script.</p>
 <pre><code>#!/bin/bash
 # Account:
 #SBATCH --account=co_your_condo
 #
 # Partition:
-#SBATCH --partition=partition_name
+#SBATCH --partition=savio
 #
 # Quality of Service:
 #SBATCH --qos=savio_lowprio
 #
-#SBATCH --nodes=30
+#SBATCH --nodes=20
 #
 # Wall clock limit:
 #SBATCH --time=00:00:30
@@ -380,7 +382,10 @@ echo &quot;hello world&quot;</code></pre>
 #
 ## Command(s) to run (example):
 ./a.out</code></pre>
-<p>Here I get 4 cores by asking for 4 cpus-per-task. Could also do with --ntasks=4, but would need --nodes=1 to guarantee all cores are on one node.</p>
+<ul>
+<li>Here I get 4 cores by asking for 4 cpus-per-task.</li>
+<li>One could also do with --ntasks=4, but would need --nodes=1 to guarantee all cores are on one node.</li>
+</ul>
 <p><strong>One can run jobs up to 10 days (using four or fewer cores) in this partition if you include <code>--qos=savio_long</code>.</strong></p>
 <h1 id="alternatives-to-the-htc-partition-for-collections-of-serial-jobs">Alternatives to the HTC partition for collections of serial jobs</h1>
 <p>You may have many serial jobs to run. It may be more cost-effective to collect those jobs together and run them across multiple cores on one or more nodes.</p>
@@ -413,7 +418,8 @@ srun: error: Unable to allocate resources: Invalid generic resource (gres) speci
 srun: error: This user/account pair does not have enough service units to afford this job&#39;s estimated cost
 
 [paciorek@ln002 ~]$  check_usage.sh -a fc_paciorek
-Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs, 0.05 CPUHrs, 0.05 SUs used from an allocation of 0 SUs.</code></pre>
+Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs, 0.05 CPUHrs, 0.05 SUs
+                                                                       used from an allocation of 0 SUs.</code></pre>
 <p>However, in most cases, even if you provide invalid values, your job will be queued rather than immediately returning an error.</p>
 <h1 id="how-slurm-works-on-savio-wei">How Slurm works on Savio (Wei)</h1>
 <ul>
@@ -439,8 +445,10 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 <li>A mysql database daemon runs on the master node</li>
 <li>Track all user account information</li>
 <li>Track all job information</li>
-<li>Track all configuration information</li>
+<li>Track all configuration information
+<ul>
 <li>partitions, qos, nodename and resources, all transactions...</li>
+</ul></li>
 <li>Commands used for this database: sacctmgr</li>
 </ul>
 <h1 id="slurmd---node-management-daemon">Slurmd - Node management daemon</h1>
@@ -454,15 +462,19 @@ Usage for ACCOUNT fc_paciorek [2020-05-31T10:00:00, 2020-11-06T14:33:06]: 1 jobs
 <h1 id="slurmctld---control-daemon-runs-on-service-node">Slurmctld - control daemon runs on service node</h1>
 <ul>
 <li>Communicate to SlurmBD for accounting information</li>
-<li>Communicate to SlurmD for state of the nodes</li>
+<li>Communicate to SlurmD for state of the nodes
+<ul>
 <li>Available resources, state of nodes</li>
 <li>What job should be scheduled to run on what node and semi-reserve that node for the job</li>
+</ul></li>
 <li>Read config files to determine how to configure Slurm, such as slurm.conf, gres.conf...</li>
-<li>Communicate and understand Slurm-plugins</li>
+<li>Communicate and understand Slurm-plugins
+<ul>
 <li>spank_private_tmpshm</li>
 <li>spank_collect_script</li>
 <li>job_submit_collect_script</li>
 <li>spank_slurm_banking</li>
+</ul></li>
 <li>Slurm Authentication: Munge</li>
 <li>User commands: sacct, squeue, sinfo, sbatch, etc</li>
 </ul>
