@@ -607,13 +607,17 @@ aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
 <ul>
 <li>Savio use Slurm's Fairshare system to prioritize amongst jobs in the queue.</li>
 <li>Fairshare assign a numerical priority score to each job based on assigned shares and the effective usage.</li>
-<li>Usage:</li>
+<li>Usage:
+<ul>
 <li>a value between 0.0 and 1.0 that represents your proportional usage of the system</li>
 <li>quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.</li>
 <li>prioritizing groups and users who have not used Savio much recently over those who have</li>
-<li>Raw Shares: assigned to each account/project by default</li>
+</ul></li>
+<li>Raw Shares: assigned to each account/project by default
+<ul>
 <li>1.0 Similar to slices of a pie</li>
 <li>represent the part of the system that is “yours”</li>
+</ul></li>
 <li>Check fairshare scores</li>
 </ul>
 <pre><code>   sshare -la |head -1 ; sshare -al |grep user_name
@@ -649,10 +653,12 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 
 </div>
 <ul>
-<li>Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:</li>
+<li>Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:
+<ul>
 <li>Each job submission</li>
 <li>Job completion on its allocated nodes</li>
 <li>At configuration changes</li>
+</ul></li>
 <li>Slurm parameters are configured to ensure backfill works: bf_window, bf_continue, bf_resolution</li>
 <li>Backfill start lower priority jobs if by doing so does not delay the expected start time of any higher priority jobs</li>
 <li><strong>Note</strong>: accurate and reasonable run times is required for backfill to start lower priority jobs</li>
@@ -662,12 +668,12 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <h1>How priorities and queuing on Savio work (1)</h1>
 <ul>
 <li>Two primary ways to run jobs on Savio: under a faculty computing allowance (FCA) and under a condo.</li>
-<li>Condo usage</li>
+<li>Condo usage
+<ul>
 <li>Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time.</li>
 <li>Additional jobs will be queued until usage drops below that limit.</li>
 <li>The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.</li>
-<li>Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
-<ul>
+<li>Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately</li>
 <li>Because the partition is fully used, across all condo and FCA users of the given partition.</li>
 <li>This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage.</li>
 <li>Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available.</li>
@@ -678,13 +684,13 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <div id="how-priorities-and-queuing-on-savio-work-2" class="slide section level1">
 <h1>How priorities and queuing on Savio work (2)</h1>
 <ul>
-<li>FCA jobs</li>
+<li>FCA jobs
+<ul>
 <li>Start when they reach the top of the queue and resources become available as running jobs finish.</li>
 <li>The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm).</li>
 <li>The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job.</li>
 <li>Jobs from multiple users within an FCA are then influenced by their individual recent usage.</li>
-<li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,
-<ul>
+<li>In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs,</li>
 <li>Priority for a given job depends inversely on that recent usage (based on the FCA the job is using).</li>
 <li>Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.</li>
 </ul></li>

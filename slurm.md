@@ -537,12 +537,12 @@ However, in most cases, even if you provide invalid values, your job will be que
 
 # Quality of Service (QoS)
 - Used to set resource limits at group, job, user levels:
-  - Max node count
-  - Max CPU
-  - Max user submission
-  - Max walltime
-  - Job Scheduling Priority 
-  - Job Preemption
+   - Max node count
+   - Max CPU
+   - Max user submission
+   - Max walltime
+   - Job Scheduling Priority 
+   - Job Preemption
 
 ```
 [root@master ~]# sacctmgr show qos -p  format="Name,MaxTRES,MaxWall,MaxTRESPerUser%30,MaxJob,MaxSubmit,Priority,Preempt"
@@ -561,12 +561,12 @@ aiolos_normal||1-00:00:00||||1000000|savio_lowprio|
 - Savio use Slurm's Fairshare system to prioritize amongst jobs in the queue.
 - Fairshare assign a numerical priority score to each job based on assigned shares and the effective usage. 
 - Usage: 
-   - a value between 0.0 and 1.0 that represents your proportional usage of the system
-   - quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.
-   - prioritizing groups and users who have not used Savio much recently over those who have
+    - a value between 0.0 and 1.0 that represents your proportional usage of the system
+    - quantified based on a standard decay schedule with a half-life of 14 days that downweights usage further in the past.
+    - prioritizing groups and users who have not used Savio much recently over those who have
 - Raw Shares: assigned to each account/project by default 
-   - 1.0 Similar to slices of a pie
-   - represent the part of the system that is “yours” 
+    - 1.0 Similar to slices of a pie
+    - represent the part of the system that is “yours” 
 -  Check fairshare scores
 
 ```
@@ -603,9 +603,9 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 ![](images/backfill.png)
 
 - Slurm is designed to perform a quick and simple scheduling attempt at frequent intervals:
-   - Each job submission
-   - Job completion on its allocated nodes
-   - At configuration changes
+    - Each job submission
+    - Job completion on its allocated nodes
+    - At configuration changes
 - Slurm parameters are configured to ensure backfill works: bf_window, bf_continue, bf_resolution
 - Backfill start lower priority jobs if by doing so does not delay the expected start time of any higher priority jobs
 - **Note**: accurate and reasonable run times is required for backfill to start lower priority jobs
@@ -614,24 +614,24 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 # How priorities and queuing on Savio work (1)
 - Two primary ways to run jobs on Savio: under a faculty computing allowance (FCA) and under a condo.
 - Condo usage
-   - Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time. 
-   - Additional jobs will be queued until usage drops below that limit. 
-   - The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.
-   - Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
-      - Because the partition is fully used, across all condo and FCA users of the given partition. 
-      - This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage. 
-      - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
-      - Usually any lag in starting condo jobs under this circumstance is limited.
+    - Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time. 
+    - Additional jobs will be queued until usage drops below that limit. 
+    - The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.
+    - Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
+       - Because the partition is fully used, across all condo and FCA users of the given partition. 
+       - This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage. 
+       - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
+       - Usually any lag in starting condo jobs under this circumstance is limited.
 
 # How priorities and queuing on Savio work (2)
 - FCA jobs 
-   - Start when they reach the top of the queue and resources become available as running jobs finish. 
-   - The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm). 
-   - The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job. 
-   - Jobs from multiple users within an FCA are then influenced by their individual recent usage.
-   - In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs, 
-     - Priority for a given job depends inversely on that recent usage (based on the FCA the job is using). 
-     - Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.
+    - Start when they reach the top of the queue and resources become available as running jobs finish. 
+    - The queue is ordered based on the Slurm Fairshare priority (specifically the Fair Tree algorithm). 
+    - The primary influence on this priority is the overall recent usage by all users in the same FCA as the user submitting the job. 
+    - Jobs from multiple users within an FCA are then influenced by their individual recent usage.
+    - In more detail, usage at the FCA level (summed across all partitions) is ordered across all FCAs, 
+       - Priority for a given job depends inversely on that recent usage (based on the FCA the job is using). 
+       - Similarly, amongst users within an FCA, usage is ordered amongst those users, such that for a given partition, a user with lower recent usage in that partition will have higher priority than one with higher recent usage.
 
 
 # Common Queue Questions (Nicolas)
@@ -661,7 +661,7 @@ sq -aq
 # `sq` Example Scenarios
 - The job would intersect with downtime so the job will run _after_ the downtime
 - Condo users have a fixed number of nodes with their condo QoS
-  - Try using `savio_lowprio` QoS
+   - Try using `savio_lowprio` QoS
 - Job is requesting longer wall-clock time than is allowed (`QOSMaxWallDurationPerJobLimit`)
 
 # `sq` Demo
@@ -673,7 +673,7 @@ sq -u "$(squeue -o %all -P | grep -i qosgrp | cut -d'|' -f21 | shuf | head -n1)"
 # `squeue`
 
 - If you need more specific information, you can use Slurm's own `squeue`.
-  - `REASON` are explained in `man squeue`
+   - `REASON` are explained in `man squeue`
   
 # Common `REASON`
 - `PRIORITY` - There are other higher priority jobs being allocated nodes
@@ -698,7 +698,7 @@ to get an _estimated_ start time.
 - Request fewer nodes (or cores on partitions scheduled by cores). Perhaps there are a few nodes available right now but you would have to wait for other jobs to release other nodes if you wanted more.
 - Choose condo QoS if possible for higher priority.
 - Choose a partition with more idle nodes
-  - `sinfo -o %P,%A` (Partition, Allocated/Idle)
-  - View on our [Savio status dashboard](https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2)
+   - `sinfo -o %P,%A` (Partition, Allocated/Idle)
+   - View on our [Savio status dashboard](https://grafana.brc.berkeley.edu/d/pkIFHJAik/job-planning?orgId=2)
 - High recent usage decreases FCA priority.
 
