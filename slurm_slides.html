@@ -675,11 +675,13 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
 <li>Aggregated over all users of the condo, limited to at most the number of nodes purchased by the condo at any given time.</li>
 <li>Additional jobs will be queued until usage drops below that limit.</li>
 <li>The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.</li>
-<li>Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately</li>
+<li>Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
+<ul>
 <li>Because the partition is fully used, across all condo and FCA users of the given partition.</li>
 <li>This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage.</li>
 <li>Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available.</li>
 <li>Usually any lag in starting condo jobs under this circumstance is limited.</li>
+</ul></li>
 </ul></li>
 </ul>
 </div>

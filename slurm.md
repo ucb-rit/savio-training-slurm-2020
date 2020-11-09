@@ -618,10 +618,10 @@ PartitionName=testbed         Nodes=n0[000-003].testbed[0]                      
      - Additional jobs will be queued until usage drops below that limit. 
      - The pending jobs will be ordered based on the Slurm Fairshare priority, with users with less recent usage prioritized.
      - Some circumstances, even when the condo's usage is below the limit, a condo job might not start immediately
-       - Because the partition is fully used, across all condo and FCA users of the given partition. 
-       - This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage. 
-       - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
-       - Usually any lag in starting condo jobs under this circumstance is limited.
+        - Because the partition is fully used, across all condo and FCA users of the given partition. 
+        - This can occur when a condo has not been fully used and FCA jobs have filled up the partition during that period of limited usage. 
+        - Condo jobs are prioritized over FCA jobs in the queue and will start as soon as resources become available. 
+        - Usually any lag in starting condo jobs under this circumstance is limited.
 
 # How priorities and queuing on Savio work (2)
  - FCA jobs 
